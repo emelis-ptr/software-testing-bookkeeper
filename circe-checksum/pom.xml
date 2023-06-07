@@ -29,7 +29,7 @@
   </parent>
 
   <artifactId>circe-checksum</artifactId>
-  <packaging>nar</packaging>
+  <packaging>jar</packaging>
   <name>Apache BookKeeper :: Circe Checksum Library</name>
   <description>Circe Checksum Library</description>
 

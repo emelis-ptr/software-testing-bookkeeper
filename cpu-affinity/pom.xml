@@ -24,7 +24,7 @@
   </parent>
 
   <artifactId>cpu-affinity</artifactId>
-  <packaging>nar</packaging>
+  <packaging>jar</packaging>
   <name>Apache BookKeeper :: CPU Affinity Library</name>
   <description>CPU Affinity Library</description>
 
