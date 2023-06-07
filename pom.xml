@@ -73,6 +73,9 @@
         <module>native-io</module>
         <module>testtools</module>
         <module>stats/bookkeeper-stats-providers/otel-metrics-provider</module>
+
+        <!--Jacoco-->
+        <module>test-jacoco</module>
     </modules>
     <mailingLists>
         <mailingList>
@@ -120,8 +123,8 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
         <!-- JaCoCo -->
-        <sonar.coverage.jacoco.xmlReportPaths>../tests/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
-
+        <sonar.coverage.jacoco.xmlReportPaths>../test-jacoco/target/site/jacoco-aggregate/jacoco.xml
+        </sonar.coverage.jacoco.xmlReportPaths>
         <!-- dependencies -->
         <arquillian-cube.version>1.18.2</arquillian-cube.version>
         <arquillian-junit.version>1.6.0.Final</arquillian-junit.version>
@@ -195,6 +198,7 @@
         <exec-maven-plugin.version>3.0.0</exec-maven-plugin.version>
         <gmavenplus-plugin.version>1.13.1</gmavenplus-plugin.version>
         <license-maven-plugin.version>1.6</license-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
         <lombok-maven-plugin.version>1.18.20.0</lombok-maven-plugin.version>
         <maven-antrun-plugin.version>1.8</maven-antrun-plugin.version>
         <maven-assembly-plugin.version>3.1.0</maven-assembly-plugin.version>
@@ -223,6 +227,8 @@
         <otel.version>1.26.0</otel.version>
 
         <jacoco.version>0.8.8</jacoco.version>
+        <pitest.version>1.8.0</pitest.version>
+        <pitest.maven.version>1.14.0</pitest.maven.version>
     </properties>
 
     <!-- dependency definitions -->

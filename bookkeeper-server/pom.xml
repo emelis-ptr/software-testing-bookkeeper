@@ -25,6 +25,12 @@
     </parent>
     <artifactId>bookkeeper-server</artifactId>
     <name>Apache BookKeeper :: Server</name>
+
+    <properties>
+        <ba-dua.groupId>br.usp.each.saeg</ba-dua.groupId>
+        <ba-dua.version>0.8.0</ba-dua.version>
+    </properties>
+
     <dependencies>
         <dependency>
             <groupId>org.apache.bookkeeper</groupId>
@@ -360,6 +366,49 @@
                         <configuration>
                             <skipTests>true</skipTests>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- Mutation PIT -->
+        <profile>
+            <id>mutation</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <withHistory>true</withHistory>
+                <pitest.version>${pitest.version}</pitest.version>
+            </properties>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.pitest</groupId>
+                        <artifactId>pitest-maven</artifactId>
+                        <version>${pitest.maven.version}</version>
+                        <configuration>
+                            <targetClasses>
+                                <!-- classes to test  -->
+                                <param>org.apache.bookkeeper.bookie.BufferedChannel</param>
+                                <param>org.apache.bookkeeper.client.BookKeeperAdmin</param>
+                            </targetClasses>
+                            <targetTests>
+
+                            </targetTests>
+                            <avoidCallsTo>
+                                <avoidCallsTo>org.slf4j</avoidCallsTo>
+                            </avoidCallsTo>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>Mutation report</id>
+                                <phase>test-compile</phase>
+                                <goals>
+                                    <goal>mutationCoverage</goal>
+                                </goals>
+                            </execution>
+                        </executions>
                     </plugin>
                 </plugins>
             </build>
