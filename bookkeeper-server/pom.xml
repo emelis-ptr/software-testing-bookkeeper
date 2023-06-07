@@ -379,22 +379,22 @@
             </activation>
             <properties>
                 <withHistory>true</withHistory>
-                <pitest.version>${pitest.version}</pitest.version>
+                <pitest.version>1.8.0</pitest.version>
             </properties>
             <build>
                 <plugins>
                     <plugin>
                         <groupId>org.pitest</groupId>
                         <artifactId>pitest-maven</artifactId>
-                        <version>${pitest.maven.version}</version>
+                        <version>1.14.0</version>
                         <configuration>
                             <targetClasses>
-                                <!-- classes to test  -->
                                 <param>org.apache.bookkeeper.bookie.BufferedChannel</param>
                                 <param>org.apache.bookkeeper.client.BookKeeperAdmin</param>
                             </targetClasses>
                             <targetTests>
-
+                                <param>org.apache.bookkeeper.bookie.BufferedChannelWriteTestl</param>
+                                <param>org.apache.bookkeeper.bookie.BufferedChannelReadTest</param>
                             </targetTests>
                             <avoidCallsTo>
                                 <avoidCallsTo>org.slf4j</avoidCallsTo>

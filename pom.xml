@@ -227,8 +227,6 @@
         <otel.version>1.26.0</otel.version>
 
         <jacoco.version>0.8.8</jacoco.version>
-        <pitest.version>1.8.0</pitest.version>
-        <pitest.maven.version>1.14.0</pitest.maven.version>
     </properties>
 
     <!-- dependency definitions -->
