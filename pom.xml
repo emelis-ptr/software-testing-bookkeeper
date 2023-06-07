@@ -119,6 +119,8 @@
         <sonar.organization>emelis-ptr</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
 
+        <!-- JaCoCo -->
+        <sonar.coverage.jacoco.xmlReportPaths>../tests/target/site/jacoco-aggregate/jacoco.xml</sonar.coverage.jacoco.xmlReportPaths>
 
         <!-- dependencies -->
         <arquillian-cube.version>1.18.2</arquillian-cube.version>
@@ -219,6 +221,8 @@
         <maven-failsafe-plugin.version>3.0.0-M6</maven-failsafe-plugin.version>
         <awaitility.version>4.0.3</awaitility.version>
         <otel.version>1.26.0</otel.version>
+
+        <jacoco.version>0.8.8</jacoco.version>
     </properties>
 
     <!-- dependency definitions -->
@@ -1326,5 +1330,31 @@
                 </plugins>
             </build>
         </profile>
+
+        <!-- JaCoCo profile -->
+        <profile>
+            <id>coverage</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco.version}</version>
+                        <executions>
+                            <execution>
+                                <id>prepare-agent</id>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
     </profiles>
 </project>
