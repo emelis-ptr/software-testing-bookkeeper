@@ -26,13 +26,17 @@ public class BufferedChannelWriteTest {
     private static final String fileName = "writeFile";
     private final ByteBuf writeByteBuf; // {null, empty, notEmpty, invalid}
     private final int bufferedCapacity; //{<0, =0, >0}
+    private final long unpersistedBytesBound;
+    private final boolean shouldForceWrite;
     private final Object expected;
     private BufferedChannel bufferedChannel;
     private FileChannel fileChannel;
 
-    public BufferedChannelWriteTest(ByteBuf writeByteBuf, int bufferedCapacity, Object expected) {
+    public BufferedChannelWriteTest(ByteBuf writeByteBuf, int bufferedCapacity, long unpersistedBytesBound, boolean shouldForceWrite, Object expected) {
         this.writeByteBuf = writeByteBuf;
         this.bufferedCapacity = bufferedCapacity;
+        this.unpersistedBytesBound = unpersistedBytesBound;
+        this.shouldForceWrite = shouldForceWrite;
         this.expected = expected;
     }
 
@@ -41,19 +45,21 @@ public class BufferedChannelWriteTest {
 
         return Arrays.asList(new Object[][]{
                 //writeByteBuf, bufferedCapacity, unpersistedBytesBound, expected
-                {null, 0, NullPointerException.class},
-                {createByteBuf(2), -1, IllegalArgumentException.class}, //capacity < 0
-                {createByteBuf(2), 1, 0}, // capacity < byteBuff length
-                {createByteBuf(2), 1, 0},
-                {createByteBuf(5), 0, 0}, //loop with capacity = 0
-                {createByteBuf(0), 2, 0}, // capacity > byteBuff length
-                {createByteBuf(1), 2, 1},
-                {createByteBuf(2), 2, 0}, // capacity = byteBuff length
-                {createByteBuf(0), 0, 0},
-                {createByteBuf(15), 10, 5},
-                {Unpooled.directBuffer(), 10, 0}, // byteBuff empty
-                {mockByteBuf(0, 0), 2, 0}, // invalid byteBuff
-                {mockByteBuf(1, -1), 2, IndexOutOfBoundsException.class},
+                {null, 0, 0L, false, NullPointerException.class},
+                {createByteBuf(2), -1, 2L, false, IllegalArgumentException.class}, //capacity < 0
+                {createByteBuf(2), 1, 2L, false, 0}, // capacity < byteBuff length
+                {createByteBuf(2), 1, 0L, false, 0},
+                {createByteBuf(5), 0, -1L, false, 0}, //loop with capacity = 0
+                {createByteBuf(0), 2, 2L, false, 0}, // capacity > byteBuff length
+                {createByteBuf(1), 2, 2L, false, 1},
+                {createByteBuf(2), 2, 0L, false, 0}, // capacity = byteBuff length
+                {createByteBuf(0), 0, -2L, false, 0}, // byteBuff empty
+                // line coverage 123 & 134
+                {createByteBuf(15), 10, 0L, false, 5},
+                // line coverage 136
+                {createByteBuf(5), 10, 5L, true, 0},
+                {mockByteBuf(0, 0), 2, 2L, false, 0}, // invalid byteBuff
+                {mockByteBuf(1, -1), 2, 0L, false, IndexOutOfBoundsException.class},
         });
     }
 
@@ -64,14 +70,13 @@ public class BufferedChannelWriteTest {
 
         try {
             if (this.writeByteBuf != null) {
-                bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity);
+                bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
+                System.out.println(this.bufferedChannel.unpersistedBytes.get());
                 if (this.bufferedCapacity != 0) {
                     this.bufferedChannel.write(this.writeByteBuf);
                 }
-                System.out.println(this.writeByteBuf.readableBytes());
-                System.out.println(this.writeByteBuf.readerIndex());
-                System.out.println(this.bufferedChannel.writeBuffer.readableBytes());
             }
+            System.out.println(this.bufferedChannel.unpersistedBytes.get());
             result = this.bufferedChannel.getNumOfBytesInWriteBuffer();
         } catch (NullPointerException | IllegalArgumentException | IOException | IndexOutOfBoundsException e) {
             result = e.getClass();

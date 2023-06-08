@@ -393,8 +393,10 @@
                                 <param>org.apache.bookkeeper.client.BookKeeperAdmin</param>
                             </targetClasses>
                             <targetTests>
-                                <param>org.apache.bookkeeper.bookie.BufferedChannelWriteTestl</param>
+                                <param>org.apache.bookkeeper.bookie.BufferedChannelWriteTest</param>
                                 <param>org.apache.bookkeeper.bookie.BufferedChannelReadTest</param>
+                                <param>org.apache.bookkeeper.client.BookKeeperAdminInitBookieTest</param>
+                                <param>org.apache.bookkeeper.client.BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest</param>
                             </targetTests>
                             <avoidCallsTo>
                                 <avoidCallsTo>org.slf4j</avoidCallsTo>
