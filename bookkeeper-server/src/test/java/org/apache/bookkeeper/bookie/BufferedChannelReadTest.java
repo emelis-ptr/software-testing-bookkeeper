@@ -17,21 +17,22 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 @RunWith(value = Parameterized.class)
 public class BufferedChannelReadTest {
     private static final String dir = "test";
     private static final String fileName = "readFile";
-
-    private FileChannel fileChannel;
-    private BufferedChannel bufferedChannel;
-    private final ByteBuf readByteBuf;
-
-    private final int bufferedCapacity;
+    private final ByteBuf readByteBuf; // {null, empty, notEmpty, invalid}
+    private final int bufferedCapacity; //{<0, =0, >0}
     private final long position;
     private final int lenght;
     private final long unpersistedBytesBound;
-
     private final Object expected;
+
+    private FileChannel fileChannel;
+    private BufferedChannel bufferedChannel;
 
     public BufferedChannelReadTest(ByteBuf readByteBuf, int bufferedCapacity, long position, int lenght, long unpersistedBytesBound, Object expected) {
         this.readByteBuf = readByteBuf;
@@ -50,24 +51,40 @@ public class BufferedChannelReadTest {
                 {null, 0, 0, 0, 0L, NullPointerException.class},
                 {Unpooled.buffer(1), 1, 0L, 0, 0L, 0},
                 {Unpooled.buffer(1), -1, 1L, 2, 1L, IllegalArgumentException.class},
-                {Unpooled.buffer(2), 2, 0L, 2, 0L, 2},
-                {Unpooled.buffer(2), 2, -1L, 2, 0L, IllegalArgumentException.class},
                 {Unpooled.buffer(2), 2, 1L, -2, 0L, IllegalArgumentException.class},
+                {Unpooled.buffer(2), 2, 0L, 2, 0L, 2},
+                //line coverage 250
+                //length > capacity - position, length > readByteBuf, position = capacity
+                {Unpooled.buffer(1), 1, 1L, 2, 1L, IOException.class},
+                //length < capacity - position, length < readByteBuf, position < capacity
+                {Unpooled.buffer(1), 1, 0L, 0, 0L, 0},
+                //length = capacity - position, length = readByteBuf, position < capacity
+                {Unpooled.buffer(2), 2, 0L, 2, 0L, 2},
+                // line coverage 251
+                {Unpooled.buffer(10), 2, 4L, 2, 0L, IllegalArgumentException.class},
+                // line coverage 264
+                {Unpooled.buffer(2), 1, 0L, 2, 0L, 2},
+                {Unpooled.buffer(0), 2, 0L, 2, 0L, 0}, // capacity = 0 -> loop
+                {Unpooled.directBuffer(), 1, 0L, 2, 0L, 2},
+                {mockByteBuf(0, 0), 1, 0L, 2, 0L, 0}, // mock readByteBuff
 
         });
     }
 
     @Test
     public void testRead() {
-        Object result;
+        Object result = 0;
         try {
             if (readByteBuf != null) {
                 this.bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
                 this.bufferedChannel.write(createByteBuf(this.lenght, this.position));
             }
-            result = this.bufferedChannel.read(this.readByteBuf, this.position, this.lenght);
+            if (this.readByteBuf.capacity() != 0) {
+                result = this.bufferedChannel.read(this.readByteBuf, this.position, this.lenght);
+            }
 
-        } catch (NullPointerException | IllegalArgumentException | IOException e) {
+        } catch (NullPointerException | IllegalArgumentException |
+                 IOException e) {
             result = e.getClass();
         }
         Assert.assertEquals("Error", this.expected, result);
@@ -94,8 +111,8 @@ public class BufferedChannelReadTest {
 
     @After
     public void tearDown() throws IOException {
-        this.fileChannel.close();
         if (bufferedChannel != null) this.bufferedChannel.close();
+        this.fileChannel.close();
     }
 
     private static ByteBuf createByteBuf(int length, long position) {
@@ -109,6 +126,13 @@ public class BufferedChannelReadTest {
         }
         rand.nextBytes(bytes);
         byteBuf.writeBytes(bytes);
+        return byteBuf;
+    }
+
+    private static ByteBuf mockByteBuf(int readableBytes, int readerIndex) {
+        ByteBuf byteBuf = mock(ByteBuf.class);
+        when(byteBuf.readableBytes()).thenReturn(readableBytes);
+        when(byteBuf.readerIndex()).thenReturn(readerIndex);
         return byteBuf;
     }
 }
