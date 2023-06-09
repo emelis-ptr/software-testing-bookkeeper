@@ -28,8 +28,9 @@ jobs:
 
       - name: Build ba-dua
         run: |
-          git clone https://github.com/saeg/ba-dua
-          cd ba-dua
+          git clone https://github.com/saeg/ba-dua.git
+          cd ba-dua/
+          git checkout tags/ba-dua-0.6.0 -b ba-dua-0.6.0
           mvn clean install
           cd ..
 

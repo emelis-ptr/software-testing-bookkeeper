@@ -225,6 +225,8 @@
         <maven-failsafe-plugin.version>3.0.0-M6</maven-failsafe-plugin.version>
         <awaitility.version>4.0.3</awaitility.version>
         <otel.version>1.26.0</otel.version>
+
+        <ba-dua.version>0.6.0</ba-dua.version>
     </properties>
 
     <!-- dependency definitions -->
@@ -1351,6 +1353,42 @@
                                 <goals>
                                     <goal>prepare-agent</goal>
                                 </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+
+        <!-- BaDua profile -->
+        <profile>
+            <id>BaDuaCoverage</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-install-plugin</artifactId>
+                        <version>${maven-install-plugin.version}</version>
+                        <inherited>false</inherited>
+                        <executions>
+                            <execution>
+                                <id>install-ba-dua-cli</id>
+                                <goals>
+                                    <goal>install-file</goal>
+                                </goals>
+                                <configuration>
+                                    <groupId>br.usp.each.saeg</groupId>
+                                    <version>${ba-dua.version}</version>
+                                    <classifier>all</classifier>
+                                    <packaging>jar</packaging>
+                                    <generatePom>true</generatePom>
+                                    <artifactId>ba-dua-cli</artifactId>
+                                    <file>${project.basedir}/test-badua/ba-dua-cli-${ba-dua.version}-all.jar</file>
+                                </configuration>
+                                <phase>validate</phase>
                             </execution>
                         </executions>
                     </plugin>

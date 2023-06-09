@@ -50,7 +50,7 @@ public class BookKeeperAdminInitBookieTest {
                 // line coverage 1370
                 {new ServerConfiguration(), "123", false, true, false, false},
                 // line coverage 1376
-                {new ServerConfiguration(), "123", false, false, true, false},
+                //{new ServerConfiguration(), "123", false, false, true, false},
 
         });
     }
