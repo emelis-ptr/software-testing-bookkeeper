@@ -225,8 +225,6 @@
         <maven-failsafe-plugin.version>3.0.0-M6</maven-failsafe-plugin.version>
         <awaitility.version>4.0.3</awaitility.version>
         <otel.version>1.26.0</otel.version>
-
-        <jacoco.version>0.8.8</jacoco.version>
     </properties>
 
     <!-- dependency definitions -->
@@ -1346,7 +1344,7 @@
                     <plugin>
                         <groupId>org.jacoco</groupId>
                         <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>${jacoco.version}</version>
+                        <version>0.8.10</version>
                         <executions>
                             <execution>
                                 <id>prepare-agent</id>

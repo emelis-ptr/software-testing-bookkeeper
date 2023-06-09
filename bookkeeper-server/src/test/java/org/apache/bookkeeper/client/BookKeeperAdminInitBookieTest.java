@@ -46,7 +46,7 @@ public class BookKeeperAdminInitBookieTest {
                 {new ServerConfiguration(), null, true, true, false, false},
                 {new ServerConfiguration(), "1234", true, true, false, false},
                 {new ServerConfiguration(), "1234", true, true, true, false},
-                {new ServerConfiguration(), "", true, true, true, false},
+                {new ServerConfiguration(), "", true, true, true, IllegalArgumentException.class},
                 {new ServerConfiguration(), "564", false, false, false, true},
                 // line coverage 1370
                 {new ServerConfiguration(), "123", false, true, false, false},
@@ -61,6 +61,10 @@ public class BookKeeperAdminInitBookieTest {
         Object result;
 
         try {
+            if (this.bookieID != null) {
+                this.conf.setBookieId(this.bookieID);
+            }
+
             if (this.getJournal) {
                 addFileDir(this.conf.getJournalDirs());
             }
@@ -88,9 +92,6 @@ public class BookKeeperAdminInitBookieTest {
             if (this.conf != null) {
                 this.conf = TestBKConfiguration.newServerConfiguration();
                 this.conf.setMetadataServiceUri(zk.getMetadataServiceUri());
-                if (this.bookieID != null) {
-                    this.conf.setBookieId(this.bookieID);
-                }
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -101,9 +102,12 @@ public class BookKeeperAdminInitBookieTest {
 
     @After
     public void tearDown() throws IOException {
-        if (this.getJournal) FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-txn"));
-        if (this.getLedger) FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-data"));
-        if (this.getIndex) FileUtils.cleanDirectory(FileUtils.getFile("/testIndex/fill.txt"));
+        if (this.getJournal && FileUtils.getFile("/tmp/bk-txn").exists())
+            FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-txn"));
+        if (this.getLedger && FileUtils.getFile("/tmp/bk-data").exists())
+            FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-data"));
+        if (this.getIndex && FileUtils.getFile("/testIndex/fill.txt").exists())
+            FileUtils.cleanDirectory(FileUtils.getFile("/testIndex/fill.txt"));
 
         deleteDirectory();
         try {
