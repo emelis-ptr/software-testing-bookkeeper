@@ -19,9 +19,9 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends BookKeeperClusterTestCase {
 
-    private final long ledgerId;
-    private final BookieId bookieAddress;
-    private final LedgerMetadata ledgerMetadata;
+    private final long ledgerId; // {>0L, =OL; <OL}
+    private final BookieId bookieAddress; //{null, new BookieSocketAddress}
+    private final LedgerMetadata ledgerMetadata; // {null, LedgerMetadata}
     private final Object expected;
 
     private static final int numOfBookies = 3;
@@ -47,7 +47,6 @@ public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends Book
 
         long ledgerID = 100L;
         int lastEntryId = 10;
-        LedgerMetadata ledgerMetadata;
 
         BookieId bookieAddress = new BookieSocketAddress("bookie0:3181").toBookieId();
         BookieId bookie1 = new BookieSocketAddress("bookie1:3181").toBookieId();
@@ -64,8 +63,8 @@ public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends Book
         ensembleOfSegment2.add(bookie1);
         ensembleOfSegment2.add(bookie2);
 
-        LedgerMetadataBuilder builder = LedgerMetadataBuilder.create();
-        builder.withId(ledgerID)
+        LedgerMetadataBuilder builder = LedgerMetadataBuilder.create()
+                .withId(ledgerID)
                 .withEnsembleSize(3)
                 .withWriteQuorumSize(3)
                 .withAckQuorumSize(2)
@@ -73,21 +72,25 @@ public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends Book
                 .withPassword(PASSWORD.getBytes())
                 .newEnsembleEntry(0, ensembleOfSegment1)
                 .newEnsembleEntry(lastEntryId + 1, ensembleOfSegment2)
-                .withLastEntryId(lastEntryId).withLength(65576).withClosedState();
+                .withLastEntryId(lastEntryId).withLength(65576)
+                .withClosedState();
 
-        ledgerMetadata = builder.build();
+        LedgerMetadata ledgerMetadata = builder.build();
 
         return Arrays.asList(new Object[][]{
                 {ledgerID, bookieAddress, ledgerMetadata, true},
                 {ledgerID, bookieAddress, null, NullPointerException.class},
                 {0L, bookieAddress, ledgerMetadata, true},
                 {-1L, bookieAddress, ledgerMetadata, true},
+                {-1L, bookie1, ledgerMetadata, true},
                 {-1L, null, ledgerMetadata, false},
+                // line coverage 1686
+                {0L, bookie3, ledgerMetadata, false},
         });
     }
 
     @Test
-    public void testEntriesInTheBookie() {
+    public void testAreEntriesOfLedgerStoredInTheBookie() {
         Object result;
         try {
             result = BookKeeperAdmin.areEntriesOfLedgerStoredInTheBookie(this.ledgerId, this.bookieAddress, this.ledgerMetadata);

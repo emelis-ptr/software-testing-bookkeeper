@@ -20,32 +20,39 @@ import java.util.Collection;
 @RunWith(Parameterized.class)
 public class BookKeeperAdminInitBookieTest {
 
-    private ServerConfiguration conf;
-    private final String bookieID;
+    private ServerConfiguration conf; // {null, new ServerConfiguration(), invalid}
+    private final String bookieID; // {null, empty, notEmpty"
+    private final boolean getJournal; // {true, false}
+    private final boolean getLedger; // {true, false}
+    private final boolean getIndex; // {true, false}
     private final Object expected;
 
     private ZooKeeperCluster zk;
 
-    public BookKeeperAdminInitBookieTest(ServerConfiguration conf, String bookieID, Object expected) {
+    public BookKeeperAdminInitBookieTest(ServerConfiguration conf, String bookieID, boolean getJournal, boolean getLedger, boolean getIndex, Object expected) {
         this.conf = conf;
         this.bookieID = bookieID;
+        this.getJournal = getJournal;
+        this.getLedger = getLedger;
+        this.getIndex = getIndex;
         this.expected = expected;
     }
 
-    /**
-     * Parametri
-     * - ServerConfiguration -> {null, new ServerConfiguration()}
-     *
-     * @return :
-     */
     @Parameterized.Parameters
     public static Collection<?> getParameters() {
         return Arrays.asList(new Object[][]{
-                {null, "123", NullPointerException.class},
-                {new ServerConfiguration(), "123", false},
-                {new ServerConfiguration(), null, false},
-                {new ServerConfiguration(), "1234", false},
-                {new ServerConfiguration(), "", true}
+                {null, "123", false, false, false, NullPointerException.class},
+                {new ServerConfiguration(), "123", false, true, false, false},
+                {new ServerConfiguration(), null, true, true, false, false},
+                {new ServerConfiguration(), "1234", true, true, false, false},
+                {new ServerConfiguration(), "1234", true, true, true, false},
+                {new ServerConfiguration(), "", true, true, true, false},
+                {new ServerConfiguration(), "564", false, false, false, true},
+                // line coverage 1370
+                {new ServerConfiguration(), "123", false, true, false, false},
+                // line coverage 1376
+                {new ServerConfiguration(), "123", false, false, true, false},
+
         });
     }
 
@@ -54,6 +61,17 @@ public class BookKeeperAdminInitBookieTest {
         Object result;
 
         try {
+            if (this.getJournal) {
+                addFileDir(this.conf.getJournalDirs());
+            }
+            if (this.getLedger) {
+                addFileDir(this.conf.getLedgerDirs());
+            }
+            if (this.getIndex) {
+                this.conf.setIndexDirName(new String[]{"/testIndex/fill.txt"});
+                addFileDir(this.conf.getIndexDirs());
+            }
+
             result = BookKeeperAdmin.initBookie(this.conf);
         } catch (NullPointerException | IllegalArgumentException e) {
             result = e.getClass();
@@ -68,16 +86,11 @@ public class BookKeeperAdminInitBookieTest {
             zk.startCluster();
             //E' necessario specificare lo URI dove vengono salvati i ledgers
             if (this.conf != null) {
+                this.conf = TestBKConfiguration.newServerConfiguration();
                 this.conf.setMetadataServiceUri(zk.getMetadataServiceUri());
                 if (this.bookieID != null) {
                     this.conf.setBookieId(this.bookieID);
                 }
-
-                this.conf = TestBKConfiguration.newServerConfiguration();
-                addFileDir(this.conf.getJournalDirs());
-                addFileDir(this.conf.getLedgerDirs());
-                this.conf.setIndexDirName(new String[]{"/testIndex/fill.txt"});
-                addFileDir(this.conf.getIndexDirs());
             }
         } catch (Exception e) {
             e.printStackTrace();
@@ -88,11 +101,10 @@ public class BookKeeperAdminInitBookieTest {
 
     @After
     public void tearDown() throws IOException {
-        String bk_txn = "/tmp/bk-txn";
-        if (FileUtils.getFile(bk_txn).exists()) {
-            FileUtils.cleanDirectory(FileUtils.getFile(bk_txn));
-            FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-data"));
-        }
+        if (this.getJournal) FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-txn"));
+        if (this.getLedger) FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-data"));
+        if (this.getIndex) FileUtils.cleanDirectory(FileUtils.getFile("/testIndex/fill.txt"));
+
         deleteDirectory();
         try {
             zk.getZooKeeperClient().close();
