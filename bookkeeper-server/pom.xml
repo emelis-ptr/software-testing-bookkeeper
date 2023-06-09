@@ -26,10 +26,10 @@
     <artifactId>bookkeeper-server</artifactId>
     <name>Apache BookKeeper :: Server</name>
 
-    <properties>
+    <!--<properties>
         <ba-dua.groupId>br.usp.each.saeg</ba-dua.groupId>
         <ba-dua.version>0.8.0</ba-dua.version>
-    </properties>
+    </properties>-->
 
     <dependencies>
         <dependency>
@@ -423,13 +423,13 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <ba-dua.version>0.8.0-SNAPSHOT</ba-dua.version>
+                <ba-dua.version>0.8.0</ba-dua.version>
                 <argLine>-javaagent:target/dependency/ba-dua-agent-rt-${ba-dua.version}-all.jar -Doutput.file=${project.build.directory}/badua.ser</argLine>
             </properties>
             <dependencies>
                 <dependency>
                     <groupId>br.usp.each.saeg</groupId>
-                    <artifactId>ba-dua-cli</artifactId>
+                    <artifactId>ba-dua</artifactId>
                     <version>${ba-dua.version}</version>
                 </dependency>
             </dependencies>
