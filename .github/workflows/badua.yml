@@ -28,9 +28,8 @@ jobs:
 
       - name: Build ba-dua
         run: |
-          git clone https://github.com/saeg/ba-dua.git
-          cd ba-dua/
-          git checkout tags/ba-dua-0.6.0 -b ba-dua-0.6.0
+          git clone https://github.com/saeg/ba-dua
+          cd ba-dua
           mvn clean install
           cd ..
 
@@ -44,3 +43,4 @@ jobs:
         with:
           name: badua-reports
           path: bookkeeper-server/target/badua.xml
+          if-no-files-found: error

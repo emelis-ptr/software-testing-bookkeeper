@@ -423,25 +423,44 @@
                 <activeByDefault>false</activeByDefault>
             </activation>
             <properties>
-                <argLine>-javaagent:${project.parent.basedir}/test-badua/ba-dua-agent-rt-${ba-dua.version}-all.jar
-                    -Doutput.file=${project.build.directory}/badua.ser</argLine>
+                <ba-dua.version>0.8.1-SNAPSHOT</ba-dua.version>
+                <argLine>-javaagent:target/dependency/ba-dua-agent-rt-${ba-dua.version}-all.jar -Doutput.file=${project.build.directory}/badua.ser</argLine>
             </properties>
-
             <dependencies>
                 <dependency>
                     <groupId>br.usp.each.saeg</groupId>
                     <artifactId>ba-dua-cli</artifactId>
-                    <classifier>all</classifier>
                     <version>${ba-dua.version}</version>
                 </dependency>
             </dependencies>
             <build>
                 <plugins>
-
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-dependency-plugin</artifactId>
+                        <version>2.10</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>copy</goal>
+                                </goals>
+                                <configuration>
+                                    <artifactItems>
+                                        <artifactItem>
+                                            <groupId>br.usp.each.saeg</groupId>
+                                            <artifactId>ba-dua-agent-rt</artifactId>
+                                            <classifier>all</classifier>
+                                            <version>${ba-dua.version}</version>
+                                        </artifactItem>
+                                    </artifactItems>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
                     <plugin>
                         <groupId>org.codehaus.mojo</groupId>
                         <artifactId>exec-maven-plugin</artifactId>
-                        <version>${exec-maven-plugin.version}</version>
+                        <version>1.5.0</version>
                         <executions>
                             <execution>
                                 <goals>
@@ -464,7 +483,6 @@
                             </execution>
                         </executions>
                     </plugin>
-
                 </plugins>
             </build>
         </profile>
