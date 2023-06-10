@@ -416,5 +416,58 @@
             </build>
         </profile>
 
+        <!-- BaDua profile -->
+        <profile>
+            <id>BaDuaCoverage</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+            </activation>
+            <properties>
+                <argLine>-javaagent:${project.parent.basedir}/test-badua/ba-dua-agent-rt-${ba-dua.version}-all.jar
+                    -Doutput.file=${project.build.directory}/badua.ser</argLine>
+            </properties>
+
+            <dependencies>
+                <dependency>
+                    <groupId>br.usp.each.saeg</groupId>
+                    <artifactId>ba-dua-cli</artifactId>
+                    <classifier>all</classifier>
+                    <version>${ba-dua.version}</version>
+                </dependency>
+            </dependencies>
+            <build>
+                <plugins>
+
+                    <plugin>
+                        <groupId>org.codehaus.mojo</groupId>
+                        <artifactId>exec-maven-plugin</artifactId>
+                        <version>${exec-maven-plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <goals>
+                                    <goal>java</goal>
+                                </goals>
+                                <phase>verify</phase>
+                                <configuration>
+                                    <mainClass>br.usp.each.saeg.badua.cli.Report</mainClass>
+                                    <arguments>
+                                        <argument>-input</argument>
+                                        <argument>${project.build.directory}/badua.ser</argument>
+                                        <argument>-classes</argument>
+                                        <argument>${project.build.outputDirectory}</argument>
+                                        <argument>-show-classes</argument>
+                                        <argument>-show-methods</argument>
+                                        <argument>-xml</argument>
+                                        <argument>${project.build.directory}/badua.xml</argument>
+                                    </arguments>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+
+                </plugins>
+            </build>
+        </profile>
+
     </profiles>
 </project>

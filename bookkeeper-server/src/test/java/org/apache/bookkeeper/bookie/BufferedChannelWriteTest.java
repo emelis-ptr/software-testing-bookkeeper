@@ -3,7 +3,9 @@ package org.apache.bookkeeper.bookie;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.apache.commons.io.FileUtils;
 import org.junit.*;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
@@ -27,16 +29,15 @@ public class BufferedChannelWriteTest {
     private final ByteBuf writeByteBuf; // {null, empty, notEmpty, invalid}
     private final int bufferedCapacity; //{<0, =0, >0}
     private final long unpersistedBytesBound;
-    private final boolean shouldForceWrite;
     private final Object expected;
     private BufferedChannel bufferedChannel;
     private FileChannel fileChannel;
+    private RandomAccessFile randomAccessFile;
 
-    public BufferedChannelWriteTest(ByteBuf writeByteBuf, int bufferedCapacity, long unpersistedBytesBound, boolean shouldForceWrite, Object expected) {
+    public BufferedChannelWriteTest(ByteBuf writeByteBuf, int bufferedCapacity, long unpersistedBytesBound, Object expected) {
         this.writeByteBuf = writeByteBuf;
         this.bufferedCapacity = bufferedCapacity;
         this.unpersistedBytesBound = unpersistedBytesBound;
-        this.shouldForceWrite = shouldForceWrite;
         this.expected = expected;
     }
 
@@ -45,21 +46,22 @@ public class BufferedChannelWriteTest {
 
         return Arrays.asList(new Object[][]{
                 //writeByteBuf, bufferedCapacity, unpersistedBytesBound, expected
-                {null, 0, 0L, false, NullPointerException.class},
-                {createByteBuf(2), -1, 2L, false, IllegalArgumentException.class}, //capacity < 0
-                {createByteBuf(2), 1, 2L, false, 0}, // capacity < byteBuff length
-                {createByteBuf(2), 1, 0L, false, 0},
-                {createByteBuf(5), 0, -1L, false, 0}, //loop with capacity = 0
-                {createByteBuf(0), 2, 2L, false, 0}, // capacity > byteBuff length
-                {createByteBuf(1), 2, 2L, false, 1},
-                {createByteBuf(2), 2, 0L, false, 0}, // capacity = byteBuff length
-                {createByteBuf(0), 0, -2L, false, 0}, // byteBuff empty
+                {null, 0, 0L, NullPointerException.class},
+                {createByteBuf(2), -1, 2L, IllegalArgumentException.class}, //capacity < 0
+                {createByteBuf(2), 1, 2L,  0}, // capacity < byteBuff length
+                {createByteBuf(2), 1, 0L, 0},
+                {createByteBuf(5), 0, -1L, 0}, //loop with capacity = 0
+                {createByteBuf(0), 2, 2L, 0}, // capacity > byteBuff length
+                {createByteBuf(1), 2, 2L, 1},
+                {createByteBuf(2), 2, 0L,0}, // capacity = byteBuff length
+                {createByteBuf(0), 0, -2L, 0}, // byteBuff empty
                 // line coverage 123 & 134
-                {createByteBuf(15), 10, 0L, false, 5},
+                {createByteBuf(15), 10, 0L, 5},
                 // line coverage 136
-                {createByteBuf(5), 10, 5L, true, 0},
-                {mockByteBuf(0, 0), 2, 2L, false, 0}, // invalid byteBuff
-                {mockByteBuf(1, -1), 2, 0L, false, IndexOutOfBoundsException.class},
+                {createByteBuf(5), 10, 5L, 0},
+                // mock byteBuff
+                {mockByteBuf(0, 0), 2, 2L, 0}, // invalid byteBuff
+                {mockByteBuf(1, -1), 2, 0L, IndexOutOfBoundsException.class},
         });
     }
 
@@ -71,12 +73,10 @@ public class BufferedChannelWriteTest {
         try {
             if (this.writeByteBuf != null) {
                 bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
-                System.out.println(this.bufferedChannel.unpersistedBytes.get());
                 if (this.bufferedCapacity != 0) {
                     this.bufferedChannel.write(this.writeByteBuf);
                 }
             }
-            System.out.println(this.bufferedChannel.unpersistedBytes.get());
             result = this.bufferedChannel.getNumOfBytesInWriteBuffer();
         } catch (NullPointerException | IllegalArgumentException | IOException | IndexOutOfBoundsException e) {
             result = e.getClass();
@@ -98,15 +98,16 @@ public class BufferedChannelWriteTest {
         File newFile = File.createTempFile(fileName, "log", new File(dir));
         newFile.deleteOnExit();
 
-        RandomAccessFile randomAccessFile = new RandomAccessFile(newFile, "rw");
+        randomAccessFile = new RandomAccessFile(newFile, "rw");
         this.fileChannel = randomAccessFile.getChannel();
         this.fileChannel.position(this.fileChannel.size());
     }
 
     @After
     public void tearDown() throws IOException {
-        this.fileChannel.close();
         if (bufferedChannel != null) this.bufferedChannel.close();
+        this.fileChannel.close();
+        this.randomAccessFile.close();
     }
 
     private static ByteBuf createByteBuf(int length) {
@@ -127,5 +128,10 @@ public class BufferedChannelWriteTest {
         when(byteBuf.readableBytes()).thenReturn(readableBytes);
         when(byteBuf.readerIndex()).thenReturn(readerIndex);
         return byteBuf;
+    }
+
+    @AfterAll
+    public static void cleanAll() throws IOException {
+        FileUtils.cleanDirectory(FileUtils.getFile(dir));
     }
 }

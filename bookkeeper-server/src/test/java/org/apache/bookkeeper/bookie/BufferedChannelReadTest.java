@@ -3,6 +3,7 @@ package org.apache.bookkeeper.bookie;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
+import org.apache.commons.io.FileUtils;
 import org.junit.*;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -17,6 +18,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -30,8 +32,8 @@ public class BufferedChannelReadTest {
     private final int lenght;
     private final long unpersistedBytesBound;
     private final Object expected;
-
     private FileChannel fileChannel;
+    private RandomAccessFile randomAccessFile;
     private BufferedChannel bufferedChannel;
 
     public BufferedChannelReadTest(ByteBuf readByteBuf, int bufferedCapacity, long position, int lenght, long unpersistedBytesBound, Object expected) {
@@ -66,7 +68,7 @@ public class BufferedChannelReadTest {
                 {Unpooled.buffer(2), 1, 0L, 2, 0L, 2},
                 {Unpooled.buffer(0), 2, 0L, 2, 0L, 0}, // capacity = 0 -> loop
                 {Unpooled.directBuffer(), 1, 0L, 2, 0L, 2},
-                {mockByteBuf(0, 0), 1, 0L, 2, 0L, 0}, // mock readByteBuff
+                {mockByteBuf(), 1, 0L, 2, 0L, 0}, // mock readByteBuff
 
         });
     }
@@ -75,10 +77,9 @@ public class BufferedChannelReadTest {
     public void testRead() {
         Object result = 0;
         try {
-            if (readByteBuf != null) {
-                this.bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
-                this.bufferedChannel.write(createByteBuf(this.lenght, this.position));
-            }
+            this.bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
+            this.bufferedChannel.write(createByteBuf(this.lenght, this.position));
+
             if (this.readByteBuf.capacity() != 0) {
                 result = this.bufferedChannel.read(this.readByteBuf, this.position, this.lenght);
             }
@@ -104,15 +105,17 @@ public class BufferedChannelReadTest {
         File newFile = File.createTempFile(fileName, "log", new File(dir));
         newFile.deleteOnExit();
 
-        RandomAccessFile randomAccessFile = new RandomAccessFile(newFile, "rw");
+        randomAccessFile = new RandomAccessFile(newFile, "rw");
         this.fileChannel = randomAccessFile.getChannel();
         this.fileChannel.position(this.fileChannel.size());
+
     }
 
     @After
     public void tearDown() throws IOException {
         if (bufferedChannel != null) this.bufferedChannel.close();
         this.fileChannel.close();
+        randomAccessFile.close();
     }
 
     private static ByteBuf createByteBuf(int length, long position) {
@@ -129,10 +132,15 @@ public class BufferedChannelReadTest {
         return byteBuf;
     }
 
-    private static ByteBuf mockByteBuf(int readableBytes, int readerIndex) {
+    private static ByteBuf mockByteBuf() {
         ByteBuf byteBuf = mock(ByteBuf.class);
-        when(byteBuf.readableBytes()).thenReturn(readableBytes);
-        when(byteBuf.readerIndex()).thenReturn(readerIndex);
+        when(byteBuf.writableBytes()).thenReturn(1);
+        when(byteBuf.writeBytes(any(ByteBuf.class), any(int.class), any(int.class))).thenThrow(new IndexOutOfBoundsException());
         return byteBuf;
+    }
+
+    @AfterClass
+    public static void cleanAll() throws IOException {
+        FileUtils.cleanDirectory(FileUtils.getFile(dir));
     }
 }
