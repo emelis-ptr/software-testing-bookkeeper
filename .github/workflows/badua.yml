@@ -30,17 +30,18 @@ jobs:
         run: |
           git clone https://github.com/saeg/ba-dua
           cd ba-dua
+          git checkout tags/ba-dua-0.6.0 -b ba-dua-0.6.0
           mvn clean install
           cd ..
 
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-        run: mvn clean verify -P BaDuaCoverage
+        run: mvn -B clean verify -P badua
 
-      - name: Add Ba-dua reports
+      - name: Add Ba-dua report
         uses: actions/upload-artifact@v3
         with:
-          name: badua-reports
+          name: badua-report
           path: bookkeeper-server/target/badua.xml
           if-no-files-found: error

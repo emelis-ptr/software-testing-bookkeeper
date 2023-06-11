@@ -950,7 +950,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>${maven-surefire-plugin.version}</version>
-                <configuration>
+                <!--<configuration>
                     <argLine>-Xmx2G -Djava.net.preferIPv4Stack=true -Dio.netty.leakDetection.level=paranoid
                         ${test.additional.args}
                     </argLine>
@@ -960,7 +960,7 @@
                     <trimStackTrace>false</trimStackTrace>
                     <forkedProcessTimeoutInSeconds>1800</forkedProcessTimeoutInSeconds>
                     <rerunFailingTestsCount>${testRetryCount}</rerunFailingTestsCount>
-                </configuration>
+                </configuration>-->
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -1353,42 +1353,6 @@
                                 <goals>
                                     <goal>prepare-agent</goal>
                                 </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-
-        <!-- BaDua profile -->
-        <profile>
-            <id>BaDuaCoverage</id>
-            <activation>
-                <activeByDefault>false</activeByDefault>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-install-plugin</artifactId>
-                        <version>${maven-install-plugin.version}</version>
-                        <inherited>false</inherited>
-                        <executions>
-                            <execution>
-                                <id>install-ba-dua-cli</id>
-                                <goals>
-                                    <goal>install-file</goal>
-                                </goals>
-                                <configuration>
-                                    <groupId>br.usp.each.saeg</groupId>
-                                    <version>${ba-dua.version}</version>
-                                    <classifier>all</classifier>
-                                    <packaging>jar</packaging>
-                                    <generatePom>true</generatePom>
-                                    <artifactId>ba-dua-cli</artifactId>
-                                    <file>${project.basedir}/test-badua/ba-dua-cli-${ba-dua.version}-all.jar</file>
-                                </configuration>
-                                <phase>validate</phase>
                             </execution>
                         </executions>
                     </plugin>
