@@ -84,7 +84,7 @@ public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends Book
                 {-1L, bookieAddress, ledgerMetadata, true},
                 {-1L, bookie1, ledgerMetadata, true},
                 {-1L, null, ledgerMetadata, false},
-                // line coverage 1686
+                // line coverage 1686 PIT
                 {0L, bookie3, ledgerMetadata, false},
         });
     }

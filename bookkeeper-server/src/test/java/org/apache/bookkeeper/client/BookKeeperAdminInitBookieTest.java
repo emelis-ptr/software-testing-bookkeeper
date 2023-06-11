@@ -47,9 +47,9 @@ public class BookKeeperAdminInitBookieTest {
                 {new ServerConfiguration(), "1234", true, true, false, false},
                 {new ServerConfiguration(), "", true, true, true, IllegalArgumentException.class},
                 {new ServerConfiguration(), "564", false, false, false, true},
-                // line coverage 1370
+                // line coverage 1370 PIT
                 {new ServerConfiguration(), "123", false, true, false, false},
-                // line coverage 1376
+                // line coverage 1376 PIT
                 //{new ServerConfiguration(), "123", false, false, true, false},
 
         });
