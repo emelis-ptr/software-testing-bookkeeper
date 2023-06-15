@@ -3,149 +3,144 @@ package org.apache.bookkeeper.bookie;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import org.apache.commons.io.FileUtils;
-import org.junit.*;
+import org.junit.Assert;
+import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.Files;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(value = Parameterized.class)
 public class BufferedChannelReadTest {
-    private static final String dir = "test";
-    private static final String fileName = "readFile";
-    private final ByteBuf readByteBuf; // {null, empty, notEmpty, invalid}
-    private final int bufferedCapacity; //{<0, =0, >0}
-    private final long position;
-    private final int lenght;
-    private final boolean withWriteBuffer;
-    private final Object expected;
-    private FileChannel fileChannel;
-    private RandomAccessFile randomAccessFile;
     private BufferedChannel bufferedChannel;
+    private final long position; // {<0, =>0}
+    private final int length; // {<0, =>0}
+    private final int numWriteBytes;
+    private final int numReadBytes;
+    private final boolean isByteBuffNull;
+    private final Object isExceptionExpected;
 
-    public BufferedChannelReadTest(ByteBuf readByteBuf, int bufferedCapacity, long position, int lenght, boolean withWriteBuffer, Object expected) {
-        this.readByteBuf = readByteBuf;
-        this.bufferedCapacity = bufferedCapacity;
+    public BufferedChannelReadTest(int capacity, int numberByteWritten, int numReadBytes, long position, int length, boolean writeBeforeReading, FileChannel fileChannel, boolean isByteBuffNull, Object isExceptionExpected) throws IOException {
         this.position = position;
-        this.lenght = lenght;
-        this.withWriteBuffer = withWriteBuffer;
-        this.expected = expected;
+        this.length = length;
+        this.numWriteBytes = numberByteWritten;
+        this.numReadBytes = numReadBytes;
+        this.isByteBuffNull = isByteBuffNull;
+        this.isExceptionExpected = isExceptionExpected;
+        configure(capacity, numberByteWritten, writeBeforeReading, fileChannel);
+    }
+
+    private void configure(int capacity, int numWriteBytes, boolean writeBeforeReading, FileChannel fileChannel) throws IOException {
+        this.bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, fileChannel, capacity);
+        if (writeBeforeReading)
+            this.bufferedChannel.write(createByteBuff(numWriteBytes));
+
+        /*int readBytes = fileChannel.read(this.bufferedChannel.readBuffer.internalNioBuffer(0, this.bufferedChannel.readCapacity),
+                this.position);
+        System.out.println(readBytes);*/
     }
 
     @Parameterized.Parameters
-    public static Collection getParameters() {
-
+    public static Collection<Object[]> getParameters() throws IOException {
         return Arrays.asList(new Object[][]{
-                //readByteBuf, bufferedCapacity, position, lenght, expected
-                {null, 0, 0, 0, true, NullPointerException.class},
-                {Unpooled.buffer(5), 1, 2L, 0, true, 0},
-                {Unpooled.buffer(2), -1, 1L, 2, true, IllegalArgumentException.class},
-                {Unpooled.buffer(2), 2, 1L, -2, true, IllegalArgumentException.class},
-                {Unpooled.buffer(2), 2, 0L, 2, true, 2},
-                {Unpooled.buffer(4), 0, 1L, 2, true, NullPointerException.class}, // loop
-                {Unpooled.buffer(0), 2, 0L, 2, true, 0}, // capacity = 0 -> loop
-                //line coverage 250 PIT
-                //length > capacity - position, length > readByteBuf, position = capacity
-                {Unpooled.buffer(1), 1, 1L, 2, true, IOException.class},
-                //length < capacity - position, length < readByteBuf, position < capacity
-                {Unpooled.buffer(1), 1, 0L, 0, true, 0},
-                //length = capacity - position, length = readByteBuf, position < capacity
-                {Unpooled.buffer(2), 2, 0L, 2, true, 2},
-                // line coverage 251 PIT
-                {Unpooled.buffer(10), 2, 4L, 2, true, IllegalArgumentException.class},
-                // line coverage 264 PIT
-                {Unpooled.buffer(2), 1, 0L, 2, true, 2},
-                {Unpooled.buffer(), 1, 0L, 2, true, 2},
-                {mockByteBuf(), 1, 0L, 2, true, 0}, // mock readByteBuff
+                //capacity, numWriteBytes, numReadBytes, pos (read), length (read)
+                //ByteBuff null
+                {2048, 256, 0, 0L, 2, true, returnFileChannel(), true, false},
+                //ByteBuff not null
+                {2048, 256, 256, -20L, 257, true, returnFileChannel(), false, IllegalArgumentException.class},
+                {2048, 256, 256, 20L, 257, true, returnFileChannel(), false, IOException.class},
+                {2048, 256, 256, 0L, -2, true, returnFileChannel(), false, false},
+                {2048, 256, 256, 0L, 257, true, returnFileChannel(), false, IOException.class},
+                {2048, 256, 64, 0L, 256, true, returnFileChannel(), false, IOException.class}, //numReadBytes < numWriteBytes
+                //{2048, 256, 0, 0L, 256, IOException.class},
+                {2048, 256, 1024, 0L, 1024, true, returnFileChannel(), false, IOException.class}, //numReadBytes > numWriteBytes && length >= numWriteBytes
+                {2048, 256, 512, 0L, 256, true, returnFileChannel(), false, false}, //numReadBytes > numWriteBytes && length == numWriteBytes
+                {1024, 256, 256, 0L, 256, true, returnFileChannel(), false, false},
+                {2048, 256, 0, 0L, 0, true, returnFileChannel(), false, false},
+                {255, 256, 256, 0L, 256, true, returnFileChannel(), false, false},
+                {255, 256, 400, 0L, 258, true, returnFileChannel(), false, IOException.class},
+                //numWriteBytes - position <=  numReadBytes && numWriteBytes - position >= length
+                {1024, 512, 700, 500, 6, true, returnFileChannel(), false, false},
+                {2048, 256, 512, 0, 200, true, returnFileChannel(), false, false},
+                //numWriteBytes - position >  numReadBytes && numReadBytes >= length
+                {2048, 1024, 400, 0, 43, true, returnFileChannel(), false, false},
+                {2048, 1024, 400, 0, 400, true, returnFileChannel(), false, false},
+                //numWriteBytes - position <=  numReadBytes && numReadBytes < length
+                {2048, 1024, 2400, 0, 2000, true, returnFileChannel(), false, IOException.class},
+                {1024, 512, 700, 500, 13, true, returnFileChannel(), false, IOException.class},
+                //numWriteBytes - position >  numReadBytes && numReadBytes < length
+                {2048, 1024, 400, 0, 401, true, returnFileChannel(), false, IOException.class},
+                //writeBeforeReading = false
+                {2048, 256, 256, 0L, -2, false, returnFileChannel(), false, false},
+                //Mock FileChannel
+                {2048, 256, 256, 0L, -2, false, mockFileChannel(), false, false},
 
-                //length > capacity - position, length > readByteBuf, position = capacity
-                {Unpooled.buffer(1), 1, 1L, 2, false, IllegalArgumentException.class},
-                //length < capacity - position, length < readByteBuf, position < capacity
-                {Unpooled.buffer(1), 1, 0L, 0, false, 0},
-                //length = capacity - position, length = readByteBuf, position < capacity
-                {Unpooled.buffer(2), 2, 0L, 2, false, IOException.class}
+                {255, 256, 0, 0L, 256, true, returnFileChannel(), true, false},
+                {255, 256, 400, 0L, 258, true, returnFileChannel(), true, false},
         });
     }
 
     @Test
     public void testRead() {
-        Object result = 0;
+        Object error = false;
+        int expectedNumBytes = 0;
         try {
-            if (this.bufferedCapacity != 0)
-                this.bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity);
-
-            if (this.withWriteBuffer)
-                this.bufferedChannel.write(createByteBuf(this.lenght));
-
-            if (this.readByteBuf.capacity() != 0) {
-                result = this.bufferedChannel.read(this.readByteBuf, this.position, this.lenght);
+            ByteBuf readByteBuf;
+            int actualNumBytes = 0;
+            if (!isByteBuffNull) {
+                readByteBuf = Unpooled.buffer(this.numReadBytes, this.numReadBytes);
+                actualNumBytes = this.bufferedChannel.read(readByteBuf, this.position, this.length);
             }
 
-        } catch (NullPointerException | IllegalArgumentException |
-                 IOException e) {
-            result = e.getClass();
+            int d = (int) (this.numWriteBytes - this.position);
+            if ((d <= this.numReadBytes && d >= this.length) || (d > this.numReadBytes && this.numReadBytes >= this.length)) {
+                if (this.length > 0) {
+                    expectedNumBytes = Math.min(d, this.numReadBytes);
+                }
+            }
+            Assert.assertEquals(expectedNumBytes, actualNumBytes);
+        } catch (IllegalArgumentException | IOException e) {
+            error = e.getClass();
         }
-        Assert.assertEquals("Error", this.expected, result);
+        Assert.assertEquals(isExceptionExpected, error);
     }
 
-    @BeforeClass
-    public static void setupEnv() {
-        //se non esiste, la cartella viene creata
-        if (!Files.exists(Paths.get(dir))) {
-            File tmpDir = new File(dir);
-            tmpDir.mkdir();
-        }
+    private ByteBuf createByteBuff(int numWriteBytes) {
+        ByteBuf writeBuf = Unpooled.buffer(numWriteBytes, numWriteBytes);
+        byte[] data = new byte[numWriteBytes];
+        Random random = new Random();
+        random.nextBytes(data);
+        writeBuf.writeBytes(data);
+        return writeBuf;
     }
 
-    @Before
-    public void setup() throws IOException {
-        File newFile = File.createTempFile(fileName, "log", new File(dir));
-        newFile.deleteOnExit();
-
-        randomAccessFile = new RandomAccessFile(newFile, "rw");
-        this.fileChannel = randomAccessFile.getChannel();
-        this.fileChannel.position(this.fileChannel.size());
-
+    private static File createTempFile() throws IOException {
+        File tempFile = File.createTempFile("file", "log");
+        tempFile.deleteOnExit();
+        return tempFile;
     }
 
-    @After
-    public void tearDown() throws IOException {
-        if (bufferedChannel != null) this.bufferedChannel.close();
-        this.fileChannel.close();
-        randomAccessFile.close();
+    private static FileChannel returnFileChannel() throws IOException {
+        File newFile = createTempFile();
+        return new RandomAccessFile(newFile, "rw").getChannel();
     }
 
-    private static ByteBuf createByteBuf(int length) {
-        Random rand = new Random();
-        ByteBuf byteBuf = Unpooled.buffer(length);
-        byte[] bytes = new byte[length];
-        rand.nextBytes(bytes);
-        byteBuf.writeBytes(bytes);
-        return byteBuf;
+    private static FileChannel mockFileChannel() throws IOException {
+        FileChannel fileChannel = mock(FileChannel.class);
+        Mockito.when(fileChannel.read(any(ByteBuffer.class), anyInt())).thenReturn(2);
+        return fileChannel;
     }
 
-    private static ByteBuf mockByteBuf() {
-        ByteBuf byteBuf = mock(ByteBuf.class);
-        when(byteBuf.writableBytes()).thenReturn(1);
-        when(byteBuf.writeBytes(any(ByteBuf.class), any(int.class), any(int.class))).thenThrow(new IndexOutOfBoundsException());
-        return byteBuf;
-    }
-
-    @AfterClass
-    public static void cleanAll() throws IOException {
-        FileUtils.cleanDirectory(FileUtils.getFile(dir));
-    }
 }

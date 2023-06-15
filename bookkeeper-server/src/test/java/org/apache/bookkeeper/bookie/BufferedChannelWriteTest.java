@@ -8,6 +8,7 @@ import org.junit.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,7 +21,6 @@ import java.util.Collection;
 import java.util.Random;
 
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(value = Parameterized.class)
 public class BufferedChannelWriteTest {
@@ -48,20 +48,19 @@ public class BufferedChannelWriteTest {
                 //writeByteBuf, bufferedCapacity, unpersistedBytesBound, expected
                 {null, 0, 0L, NullPointerException.class},
                 {createByteBuf(2), -1, 2L, IllegalArgumentException.class}, //capacity < 0
-                {createByteBuf(2), 1, 2L,  0}, // capacity < byteBuff length
+                {createByteBuf(2), 1, 2L, 0}, // capacity < byteBuff length
                 {createByteBuf(2), 1, 0L, 0},
                 {createByteBuf(5), 0, -1L, 0}, //loop with capacity = 0
                 {createByteBuf(0), 2, 2L, 0}, // capacity > byteBuff length
                 {createByteBuf(1), 2, 2L, 1},
-                {createByteBuf(2), 2, 0L,0}, // capacity = byteBuff length
+                {createByteBuf(2), 2, 0L, 0}, // capacity = byteBuff length
                 {createByteBuf(0), 0, -2L, 0}, // byteBuff empty
                 // line coverage 123 & 134 PIT
                 {createByteBuf(15), 10, 0L, 5},
                 // line coverage 136 PIT
                 {createByteBuf(5), 10, 5L, 0},
-                // mock byteBuff
-                {mockByteBuf(0, 0), 2, 2L, 0}, // invalid byteBuff
-                {mockByteBuf(1, -1), 2, 0L, IndexOutOfBoundsException.class},
+                // Mock ByteBuff
+                {mockByteBuf(), 10, 5L, 0},
         });
     }
 
@@ -81,6 +80,7 @@ public class BufferedChannelWriteTest {
         } catch (NullPointerException | IllegalArgumentException | IOException | IndexOutOfBoundsException e) {
             result = e.getClass();
         }
+        
         Assert.assertEquals("Error expected", this.expected, result);
     }
 
@@ -123,10 +123,9 @@ public class BufferedChannelWriteTest {
         return byteBuf;
     }
 
-    private static ByteBuf mockByteBuf(int readableBytes, int readerIndex) {
+    private static ByteBuf mockByteBuf() {
         ByteBuf byteBuf = mock(ByteBuf.class);
-        when(byteBuf.readableBytes()).thenReturn(readableBytes);
-        when(byteBuf.readerIndex()).thenReturn(readerIndex);
+        Mockito.when(byteBuf.readableBytes()).thenReturn(0);
         return byteBuf;
     }
 
