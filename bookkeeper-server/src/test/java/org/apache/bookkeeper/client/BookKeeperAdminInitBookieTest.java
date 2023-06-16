@@ -1,7 +1,12 @@
 package org.apache.bookkeeper.client;
 
+import org.apache.bookkeeper.bookie.BookieException;
+import org.apache.bookkeeper.bookie.BookieImpl;
 import org.apache.bookkeeper.conf.ServerConfiguration;
 import org.apache.bookkeeper.conf.TestBKConfiguration;
+import org.apache.bookkeeper.discover.RegistrationManager;
+import org.apache.bookkeeper.meta.MetadataBookieDriver;
+import org.apache.bookkeeper.net.BookieId;
 import org.apache.bookkeeper.test.ZooKeeperCluster;
 import org.apache.bookkeeper.test.ZooKeeperClusterUtil;
 import org.apache.commons.io.FileUtils;
@@ -11,46 +16,57 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.Arrays;
 import java.util.Collection;
+
+import static org.mockito.Mockito.mock;
 
 @RunWith(Parameterized.class)
 public class BookKeeperAdminInitBookieTest {
 
     private ServerConfiguration conf; // {null, new ServerConfiguration(), invalid}
-    private final String bookieID; // {null, empty, notEmpty"
-    private final boolean getJournal; // {true, false}
-    private final boolean getLedger; // {true, false}
-    private final boolean getIndex; // {true, false}
+    private final String bookieID; // {null, empty, notEmpty}
+    private final boolean addJournal; // {true, false}
+    private final boolean addLedger; // {true, false}
+    private final boolean addIndexConf; // {true, false}
+    private final boolean addIndex; // {true, false}
     private final Object expected;
 
     private ZooKeeperCluster zk;
 
-    public BookKeeperAdminInitBookieTest(ServerConfiguration conf, String bookieID, boolean getJournal, boolean getLedger, boolean getIndex, Object expected) {
+    public BookKeeperAdminInitBookieTest(ServerConfiguration conf, String bookieID, boolean addJournal, boolean getLedger, boolean addIndexConf, boolean addIndex, Object expected) {
         this.conf = conf;
         this.bookieID = bookieID;
-        this.getJournal = getJournal;
-        this.getLedger = getLedger;
-        this.getIndex = getIndex;
+        this.addJournal = addJournal;
+        this.addLedger = getLedger;
+        this.addIndexConf = addIndexConf;
+        this.addIndex = addIndex;
         this.expected = expected;
     }
 
     @Parameterized.Parameters
     public static Collection<?> getParameters() {
         return Arrays.asList(new Object[][]{
-                {null, "123", false, false, false, NullPointerException.class},
-                {new ServerConfiguration(), "123", false, true, false, false},
-                {new ServerConfiguration(), null, true, true, false, false},
-                {new ServerConfiguration(), "1234", true, true, false, false},
-                {new ServerConfiguration(), "", true, true, true, IllegalArgumentException.class},
-                {new ServerConfiguration(), "564", false, false, false, true},
+                {null, "123", false, false, false, true, NullPointerException.class},
+                {new ServerConfiguration(), "123", false, true, false, true, false},
+                {new ServerConfiguration(), null, true, true, false, true, false},
+                {new ServerConfiguration(), "1234", true, true, false, true, false},
+                {new ServerConfiguration(), "", true, true, true, true, IllegalArgumentException.class},
+                {new ServerConfiguration(), "564", false, false, false, true, true},
                 // line coverage 1370 PIT
-                {new ServerConfiguration(), "123", false, true, false, false},
+                {new ServerConfiguration(), "123", false, true, false, true, false},
                 // line coverage 1376 PIT
-                {new ServerConfiguration(), "123", false, false, true, false},
+                {new ServerConfiguration(), "123", false, false, true, true, false},
+                // line coverage 1374 JACOCO
+                {new ServerConfiguration(), "123", false, false, false, false, true},
+                // line coverage 1375 JACOCO
+                {new ServerConfiguration(), "123", false, false, true, false, true},
+                {new ServerConfiguration(), "123", false, false, true, true, false},
 
         });
     }
@@ -63,17 +79,19 @@ public class BookKeeperAdminInitBookieTest {
             if (this.bookieID != null) {
                 this.conf.setBookieId(this.bookieID);
             }
-            if (this.getJournal) {
+            if (this.addJournal) {
                 addFileDir(this.conf.getJournalDirs());
             }
-            if (this.getLedger) {
+            if (this.addLedger) {
                 addFileDir(this.conf.getLedgerDirs());
             }
-            if (this.getIndex) {
+            if (this.addIndexConf) {
                 this.conf.setIndexDirName(new String[]{"/testIndex/fill.txt"});
-                addFileDir(this.conf.getIndexDirs());
+                if (this.addIndex)
+                    addFileDir(this.conf.getIndexDirs());
             }
 
+            mockRegistrationManager(this.conf);
             result = BookKeeperAdmin.initBookie(this.conf);
         } catch (NullPointerException | IllegalArgumentException e) {
             result = e.getClass();
@@ -100,11 +118,11 @@ public class BookKeeperAdminInitBookieTest {
 
     @After
     public void tearDown() throws IOException {
-        if (this.getJournal && FileUtils.getFile("/tmp/bk-txn").exists())
+        if (this.addJournal && FileUtils.getFile("/tmp/bk-txn").exists())
             FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-txn"));
-        if (this.getLedger && FileUtils.getFile("/tmp/bk-data").exists())
+        if (this.addLedger && FileUtils.getFile("/tmp/bk-data").exists())
             FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-data"));
-        if (this.getIndex && FileUtils.getFile("/testIndex/fill.txt").exists())
+        if (this.addIndexConf && FileUtils.getFile("/testIndex/fill.txt").exists())
             FileUtils.cleanDirectory(FileUtils.getFile("/testIndex/fill.txt"));
 
         deleteDirectory();
@@ -140,5 +158,22 @@ public class BookKeeperAdminInitBookieTest {
                 FileUtils.deleteDirectory(dir);
             }
         }
+    }
+
+    /**
+     * Mock RegistrationManager
+     *
+     * @param conf:
+     * @throws UnknownHostException:
+     * @throws BookieException:
+     */
+    private void mockRegistrationManager(ServerConfiguration conf) throws UnknownHostException, BookieException {
+        BookieId bookieId = BookieImpl.getBookieId(conf);
+        MetadataBookieDriver metadataBookieDriver = mock(MetadataBookieDriver.class);
+        RegistrationManager registrationManager = mock(RegistrationManager.class);
+
+        Mockito.when(metadataBookieDriver.createRegistrationManager()).thenReturn(registrationManager);
+        Mockito.when(registrationManager.isBookieRegistered(bookieId)).thenReturn(false);
+        Mockito.when(registrationManager.readCookie(bookieId)).thenThrow(new BookieException.CookieNotFoundException());
     }
 }
