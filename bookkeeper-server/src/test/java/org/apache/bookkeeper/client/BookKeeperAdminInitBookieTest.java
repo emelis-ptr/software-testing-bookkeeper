@@ -50,7 +50,7 @@ public class BookKeeperAdminInitBookieTest {
                 // line coverage 1370 PIT
                 {new ServerConfiguration(), "123", false, true, false, false},
                 // line coverage 1376 PIT
-                //{new ServerConfiguration(), "123", false, false, true, false},
+                {new ServerConfiguration(), "123", false, false, true, false},
 
         });
     }
@@ -63,7 +63,6 @@ public class BookKeeperAdminInitBookieTest {
             if (this.bookieID != null) {
                 this.conf.setBookieId(this.bookieID);
             }
-
             if (this.getJournal) {
                 addFileDir(this.conf.getJournalDirs());
             }
