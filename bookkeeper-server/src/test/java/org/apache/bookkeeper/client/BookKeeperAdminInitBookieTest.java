@@ -43,18 +43,18 @@ public class BookKeeperAdminInitBookieTest {
     @Parameterized.Parameters
     public static Collection<?> getParameters() {
         return Arrays.asList(new Object[][]{
-                {null, "123", false, false, false, true,  NullPointerException.class},
-                {new ServerConfiguration(), "123", false, true, false, true,  false},
-                {new ServerConfiguration(), null, true, true, false, true,  false},
-                {new ServerConfiguration(), "1234", true, true, false, true,  false},
+                {null, "123", false, false, false, true, NullPointerException.class},
+                {new ServerConfiguration(), "123", false, true, false, true, false},
+                {new ServerConfiguration(), null, true, true, false, true, false},
+                {new ServerConfiguration(), "1234", true, true, false, true, false},
                 {new ServerConfiguration(), "", true, true, true, true, IllegalArgumentException.class},
-                {new ServerConfiguration(), "564", false, false, false,  true, true},
+                {new ServerConfiguration(), "564", false, false, false, true, true},
                 // line coverage 1370 PIT
-                {new ServerConfiguration(), "123", false, true, false, true,  false},
+                {new ServerConfiguration(), "123", false, true, false, true, false},
                 // line coverage 1376 PIT
-                {new ServerConfiguration(), "123", false, false, true, true,  false},
+                {new ServerConfiguration(), "123", false, false, true, true, false},
                 // line coverage 1374 JACOCO
-                {new ServerConfiguration(), "123", false, false, false, false,  true},
+                {new ServerConfiguration(), "123", false, false, false, false, true},
                 // line coverage 1375 JACOCO
                 {new ServerConfiguration(), "123", false, false, true, false, true},
         });
@@ -75,11 +75,10 @@ public class BookKeeperAdminInitBookieTest {
                 addFileDir(this.conf.getLedgerDirs());
             }
             if (this.addIndexConf) {
-                this.conf.setIndexDirName(new String[]{"/testIndex/fill.txt"});
+                this.conf.setIndexDirName(new String[]{System.getProperty("user.dir") + "/tmp/fill.txt"});
                 if (this.addIndex)
                     addFileDir(this.conf.getIndexDirs());
             }
-
             result = BookKeeperAdmin.initBookie(this.conf);
         } catch (NullPointerException | IllegalArgumentException e) {
             result = e.getClass();
@@ -110,9 +109,10 @@ public class BookKeeperAdminInitBookieTest {
             FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-txn"));
         if (this.addLedger && FileUtils.getFile("/tmp/bk-data").exists())
             FileUtils.cleanDirectory(FileUtils.getFile("/tmp/bk-data"));
-        if (this.addIndexConf && FileUtils.getFile("/testIndex/fill.txt").exists())
-            FileUtils.cleanDirectory(FileUtils.getFile("/testIndex/fill.txt"));
-
+        if (this.addIndexConf && FileUtils.getFile(System.getProperty("user.dir") + "/tmp/fill.txt").exists()) {
+            FileUtils.cleanDirectory(FileUtils.getFile(System.getProperty("user.dir") + "/tmp/fill.txt"));
+            FileUtils.deleteDirectory(new File(System.getProperty("user.dir") + "/tmp"));
+        }
         deleteDirectory();
         try {
             zk.getZooKeeperClient().close();
