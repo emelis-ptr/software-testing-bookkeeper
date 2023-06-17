@@ -61,7 +61,7 @@ public class BufferedChannelReadTest {
         return Arrays.asList(new Object[][]{
                 //capacity, numWriteBytes, numReadBytes, pos (read), length (read)
                 //ByteBuff null
-                {15, 2, 0, 0L, 2, NOT_WRITE, returnFileChannel(), true, false},
+                {15, 2, 0, 0L, 2, NOT_WRITE, returnFileChannel(), true, NullPointerException.class}, // NullPointerException.class
                 //ByteBuff not null
                 {15, 2, 2, -1L, 3, WRITE, returnFileChannel(), false, IllegalArgumentException.class},
                 {15, 2, 2, 20L, 3, WRITE, returnFileChannel(), false, IllegalArgumentException.class},
@@ -111,12 +111,12 @@ public class BufferedChannelReadTest {
         Object error = false;
         int expectedNumBytes = 0;
         try {
-            ByteBuf readByteBuf;
-            int actualNumBytes = 0;
+            ByteBuf readByteBuf = null;
             if (!isNotNullByteBuff) {
                 readByteBuf = Unpooled.buffer(this.numReadBytes, this.numReadBytes);
-                actualNumBytes = this.bufferedChannel.read(readByteBuf, this.position, this.length);
             }
+
+            int actualNumBytes = this.bufferedChannel.read(readByteBuf, this.position, this.length);
 
             int d = (int) (this.numWriteBytes - this.position);
             if ((d <= this.numReadBytes && d >= this.length) || (d > this.numReadBytes && this.numReadBytes >= this.length)) {
@@ -125,7 +125,7 @@ public class BufferedChannelReadTest {
                 }
             }
             Assert.assertEquals(expectedNumBytes, actualNumBytes);
-        } catch (IllegalArgumentException | IOException e) {
+        } catch (IllegalArgumentException | IOException | NullPointerException e) {
             error = e.getClass();
         }
         Assert.assertEquals(isExceptionExpected, error);
