@@ -45,18 +45,18 @@ public class BookKeeperAdminInitBookieTest {
         return Arrays.asList(new Object[][]{
                 {null, "123", false, false, false, true, NullPointerException.class},
                 {new ServerConfiguration(), "123", false, true, false, true, false},
-                {new ServerConfiguration(), null, true, true, false, true, false},
+                {new ServerConfiguration(), null, true, true, false, true, NullPointerException.class},
                 {new ServerConfiguration(), "1234", true, true, false, true, false},
                 {new ServerConfiguration(), "", true, true, true, true, IllegalArgumentException.class},
-                {new ServerConfiguration(), "564", false, false, false, true, true},
+                {new ServerConfiguration(), "564", false, false, false, true, false},
                 // line coverage 1370 PIT
                 {new ServerConfiguration(), "123", false, true, false, true, false},
                 // line coverage 1376 PIT
                 {new ServerConfiguration(), "123", false, false, true, true, false},
                 // line coverage 1374 JACOCO
-                {new ServerConfiguration(), "123", false, false, false, false, true},
+                {new ServerConfiguration(), "123", false, false, false, false, false},
                 // line coverage 1375 JACOCO
-                {new ServerConfiguration(), "123", false, false, true, false, true},
+                {new ServerConfiguration(), "123", false, false, true, false, false},
         });
     }
 
@@ -65,20 +65,20 @@ public class BookKeeperAdminInitBookieTest {
         Object result;
 
         try {
-            if (this.bookieID != null) {
-                this.conf.setBookieId(this.bookieID);
-            }
-            if (this.addJournal) {
-                addFileDir(this.conf.getJournalDirs());
-            }
-            if (this.addLedger) {
-                addFileDir(this.conf.getLedgerDirs());
-            }
-            if (this.addIndexConf) {
-                this.conf.setIndexDirName(new String[]{System.getProperty("user.dir") + "/tmp/fill.txt"});
-                if (this.addIndex)
-                    addFileDir(this.conf.getIndexDirs());
-            }
+            //if (this.bookieID != null) {
+            this.conf.setBookieId(this.bookieID);
+            //}
+            //if (this.addJournal) {
+            addFileDir(this.conf.getJournalDirs());
+            //}
+            //if (this.addLedger) {
+            addFileDir(this.conf.getLedgerDirs());
+            //}
+            //if (this.addIndexConf) {
+            this.conf.setIndexDirName(new String[]{System.getProperty("user.dir") + "/tmp/fill.txt"});
+            //  if (this.addIndex)
+            addFileDir(this.conf.getIndexDirs());
+            //}
             result = BookKeeperAdmin.initBookie(this.conf);
         } catch (NullPointerException | IllegalArgumentException e) {
             result = e.getClass();

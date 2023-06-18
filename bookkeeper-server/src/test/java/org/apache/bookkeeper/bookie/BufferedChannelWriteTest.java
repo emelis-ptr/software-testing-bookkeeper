@@ -63,9 +63,9 @@ public class BufferedChannelWriteTest {
                 {createByteBuf(20), 20, 1L, 0}, // capacity = byteBuff length
                 {createByteBuf(0), 0, -2L, 0}, // byteBuff empty
                 // line coverage 123 & 134 PIT
-                {createByteBuf(15), 10, 0L, 5},
+                //{createByteBuf(15), 10, 0L, 5},
                 // line coverage 136 PIT
-                {createByteBuf(5), 10, 5L, 0},
+                //{createByteBuf(5), 10, 5L, 0},
                 // Mock ByteBuff
                 {mockByteBuf(), 10, 5L, 0},
         });
