@@ -55,9 +55,9 @@ public class BufferedChannelWriteTest {
                 {createByteBuf(1), 2, 2L, 1},
                 {createByteBuf(2), 2, 0L, 0}, // capacity = byteBuff length
                 {createByteBuf(0), 0, -2L, 0}, // byteBuff empty
-                // line coverage 123 & 134 PIT
-                //{createByteBuf(15), 10, 0L, 5},
-                // line coverage 136 PIT
+                // line coverage 123 & 134
+                {createByteBuf(15), 10, 0L, 5},
+                // line coverage 136
                 //{createByteBuf(5), 10, 5L, 0},
                 // Mock ByteBuff
                 {mockByteBuf(), 10, 5L, 0},
@@ -80,7 +80,7 @@ public class BufferedChannelWriteTest {
         } catch (NullPointerException | IllegalArgumentException | IOException | IndexOutOfBoundsException e) {
             result = e.getClass();
         }
-        
+
         Assert.assertEquals("Error expected", this.expected, result);
     }
 

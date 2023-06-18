@@ -68,41 +68,40 @@ public class BufferedChannelReadTest {
                 {15, 2, 2, 0L, -2, WRITE, returnFileChannel(), false, false},
                 {15, 2, 2, 0L, 5, WRITE, returnFileChannel(), false, IOException.class},
                 // not writing before reading
-                //{0, 2, 2, 0L, 2, NOT_WRITE, returnFileChannel(), false, IOException.class},
-                //{15, 2, 2, 0L, 2, NOT_WRITE, mockFileChannel(5), false, false},
-//
-                //{15, 2, 2, 5L, 1, WRITE, returnFileChannel(), false, IllegalArgumentException.class}, // writeBufferStartPosition < position
-                //{15, 2, 2, -1L, 1, WRITE, returnFileChannel(), false, IllegalArgumentException.class}, // writeBufferStartPosition > position
-                //{15, 2, 2, 0L, 2, WRITE, returnFileChannel(), false, false},// writeBufferStartPosition = position
-                //// writeBuffer = null
-                //{15, 2, 2, 5L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition < position
-                //{15, 2, 2, 0L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition > position
-                //{15, 2, 2, 2L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition = position
-                //{15, 2, 2, 5L, 2, MOCK, mockFileChannel(-3), false, false},
-                //{15, 2, 2, 5L, 2, MOCK, mockFileChannel(0), false, false},
-                ////numReadBytes < numWriteBytes
-                //{15, 5, 1, 0L, 5, WRITE, returnFileChannel(), false, IOException.class},
-                //{15, 5, 0, 0L, 5, WRITE, returnFileChannel(), false, IOException.class},
-                ////numReadBytes > numWriteBytes && length >= numWriteBytes
-                //{15, 5, 10, 0L, 10, WRITE, returnFileChannel(), false, IOException.class},
-                ////numReadBytes > numWriteBytes && length == numWriteBytes
-                //{15, 5, 8, 0L, 5, WRITE, returnFileChannel(), false, false},
-                ////numReadBytes = numWriteBytes = length
-                //{15, 5, 5, 0L, 5, WRITE, returnFileChannel(), false, false},
-                ////numWriteBytes - position <=  numReadBytes && numWriteBytes - position >= length
-                //{12, 8, 5, 5L, 1, WRITE, returnFileChannel(), false, false},
-                //{15, 5, 8, 0L, 4, WRITE, returnFileChannel(), false, false},
-                //{15, 5, 4, 1L, 4, WRITE, returnFileChannel(), false, false},
-                ////numWriteBytes - position >  numReadBytes && numReadBytes >= length
-                //{15, 8, 4, 0L, 2, WRITE, returnFileChannel(), false, false},
-                //{15, 8, 4, 1L, 4, WRITE, returnFileChannel(), false, false},
-                ////numWriteBytes - position <=  numReadBytes && numReadBytes < length
-                //{15, 8, 10, 0L, 12, WRITE, returnFileChannel(), false, IOException.class},
-                //{15, 8, 8, 0L, 12, WRITE, returnFileChannel(), false, IOException.class},
-                ////numWriteBytes - position >  numReadBytes && numReadBytes < length
-                //{15, 10, 8, 0L, 10, WRITE, returnFileChannel(), false, IOException.class},
-                //// line coverage 250 PIT
-                //{255, 256, 256, 0L, 256, WRITE, returnFileChannel(), false, false},
+                {0, 2, 2, 0L, 2, NOT_WRITE, returnFileChannel(), false, IOException.class},
+                {15, 2, 2, 0L, 2, NOT_WRITE, mockFileChannel(5), false, false},
+                {15, 2, 2, 5L, 1, WRITE, returnFileChannel(), false, IllegalArgumentException.class}, // writeBufferStartPosition < position
+                {15, 2, 2, -1L, 1, WRITE, returnFileChannel(), false, IllegalArgumentException.class}, // writeBufferStartPosition > position
+                {15, 2, 2, 0L, 2, WRITE, returnFileChannel(), false, false},// writeBufferStartPosition = position
+                // writeBuffer = null
+                {15, 2, 2, 5L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition < position
+                {15, 2, 2, 0L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition > position
+                {15, 2, 2, 2L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition = position
+                {15, 2, 2, 5L, 2, MOCK, mockFileChannel(-3), false, false},
+                {15, 2, 2, 5L, 2, MOCK, mockFileChannel(0), false, false},
+                //numReadBytes < numWriteBytes
+                {15, 5, 1, 0L, 5, WRITE, returnFileChannel(), false, IOException.class},
+                {15, 5, 0, 0L, 5, WRITE, returnFileChannel(), false, IOException.class},
+                //numReadBytes > numWriteBytes && length >= numWriteBytes
+                {15, 5, 10, 0L, 10, WRITE, returnFileChannel(), false, IOException.class},
+                //numReadBytes > numWriteBytes && length == numWriteBytes
+                {15, 5, 8, 0L, 5, WRITE, returnFileChannel(), false, false},
+                //numReadBytes = numWriteBytes = length
+                {15, 5, 5, 0L, 5, WRITE, returnFileChannel(), false, false},
+                //numWriteBytes - position <=  numReadBytes && numWriteBytes - position >= length
+                {12, 8, 5, 5L, 1, WRITE, returnFileChannel(), false, false},
+                {15, 5, 8, 0L, 4, WRITE, returnFileChannel(), false, false},
+                {15, 5, 4, 1L, 4, WRITE, returnFileChannel(), false, false},
+                //numWriteBytes - position >  numReadBytes && numReadBytes >= length
+                {15, 8, 4, 0L, 2, WRITE, returnFileChannel(), false, false},
+                {15, 8, 4, 1L, 4, WRITE, returnFileChannel(), false, false},
+                //numWriteBytes - position <=  numReadBytes && numReadBytes < length
+                {15, 8, 10, 0L, 12, WRITE, returnFileChannel(), false, IOException.class},
+                {15, 8, 8, 0L, 12, WRITE, returnFileChannel(), false, IOException.class},
+                //numWriteBytes - position >  numReadBytes && numReadBytes < length
+                {15, 10, 8, 0L, 10, WRITE, returnFileChannel(), false, IOException.class},
+                // line coverage 250
+                {255, 256, 256, 0L, 256, WRITE, returnFileChannel(), false, false},
         });
     }
 
