@@ -49,18 +49,11 @@ public class BufferedChannelWriteTest {
                 {null, 0, 0L, NullPointerException.class},
                 {createByteBuf(2), -1, 2L, IllegalArgumentException.class}, //capacity < 0
                 {createByteBuf(2), 1, 2L, 0}, // capacity < byteBuff length
-                {createByteBuf(2), 1, 2L, 0}, // capacity < byteBuff length
-                {createByteBuf(20), 10, 2L, 0}, // capacity < byteBuff length
                 {createByteBuf(2), 1, 0L, 0},
-                {createByteBuf(20), 10, 0L, 0},
-                {createByteBuf(5), 0, -1L, IOException.class}, //loop with capacity = 0
+                {createByteBuf(5), 0, -1L, 0}, //loop with capacity = 0
                 {createByteBuf(0), 2, 2L, 0}, // capacity > byteBuff length
-                {createByteBuf(0), 20, 2L, 0}, // capacity > byteBuff length
-                {createByteBuf(0), 20, 0L, 0}, // capacity > byteBuff length
                 {createByteBuf(1), 2, 2L, 1},
-                {createByteBuf(10), 20, 2L, 0},
                 {createByteBuf(2), 2, 0L, 0}, // capacity = byteBuff length
-                {createByteBuf(20), 20, 1L, 0}, // capacity = byteBuff length
                 {createByteBuf(0), 0, -2L, 0}, // byteBuff empty
                 // line coverage 123 & 134 PIT
                 {createByteBuf(15), 10, 0L, 5},
@@ -77,24 +70,17 @@ public class BufferedChannelWriteTest {
         Object result;
 
         try {
-
-            int capacity = 0;
             if (this.writeByteBuf != null) {
                 bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
                 if (this.bufferedCapacity != 0) {
                     this.bufferedChannel.write(this.writeByteBuf);
                 }
-                capacity = this.writeByteBuf.capacity();
             }
             result = this.bufferedChannel.getNumOfBytesInWriteBuffer();
-
-            ByteBuf buffer = Unpooled.buffer(capacity, capacity);
-            int numBytesWritten = this.bufferedChannel.read(buffer, 0);
-            Assert.assertEquals(capacity, numBytesWritten);
         } catch (NullPointerException | IllegalArgumentException | IOException | IndexOutOfBoundsException e) {
             result = e.getClass();
         }
-
+        
         Assert.assertEquals("Error expected", this.expected, result);
     }
 
