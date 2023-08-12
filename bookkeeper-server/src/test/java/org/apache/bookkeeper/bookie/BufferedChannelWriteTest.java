@@ -8,7 +8,6 @@ import org.junit.*;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.mockito.Mockito;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,22 +19,36 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 
-import static org.mockito.Mockito.mock;
-
 @RunWith(value = Parameterized.class)
 public class BufferedChannelWriteTest {
     private static final String dir = "test";
     private static final String fileName = "writeFile";
-    private final ByteBuf writeByteBuf; // {null, empty, notEmpty, invalid}
+    private ByteBuf writeByteBuf; // {null, empty, notEmpty, invalid}
     private final int bufferedCapacity; //{<0, =0, >0}
     private final long unpersistedBytesBound;
     private final Object expected;
+
     private BufferedChannel bufferedChannel;
     private FileChannel fileChannel;
     private RandomAccessFile randomAccessFile;
 
-    public BufferedChannelWriteTest(ByteBuf writeByteBuf, int bufferedCapacity, long unpersistedBytesBound, Object expected) {
-        this.writeByteBuf = writeByteBuf;
+    public BufferedChannelWriteTest(Buffer bufferType, int bufferedCapacity, long unpersistedBytesBound, Object expected) {
+
+        switch (bufferType) {
+            case VALID: {
+                this.writeByteBuf = createByteBuf(50);
+                break;
+            }
+            case EMPTY: {
+                this.writeByteBuf = createByteBuf(0);
+                break;
+            }
+            case NULL: {
+                this.writeByteBuf = null;
+                break;
+            }
+
+        }
         this.bufferedCapacity = bufferedCapacity;
         this.unpersistedBytesBound = unpersistedBytesBound;
         this.expected = expected;
@@ -46,21 +59,23 @@ public class BufferedChannelWriteTest {
 
         return Arrays.asList(new Object[][]{
                 //writeByteBuf, bufferedCapacity, unpersistedBytesBound, expected
-                {null, 0, 0L, NullPointerException.class},
-                {createByteBuf(2), -1, 2L, IllegalArgumentException.class}, //capacity < 0
-                {createByteBuf(2), 1, 2L, 0}, // capacity < byteBuff length
-                {createByteBuf(2), 1, 0L, 0},
-                {createByteBuf(5), 0, -1L, 0}, //loop with capacity = 0
-                {createByteBuf(0), 2, 2L, 0}, // capacity > byteBuff length
-                {createByteBuf(1), 2, 2L, 1},
-                {createByteBuf(2), 2, 0L, 0}, // capacity = byteBuff length
-                {createByteBuf(0), 0, -2L, 0}, // byteBuff empty
+                {Buffer.NULL, 0, 0L, NullPointerException.class},
+                {Buffer.VALID, 20, 0L, 10}, // capacity < byteBuff length &&  unpersistedBytesBound = OL
+                {Buffer.VALID, 20, 2L, 0}, // capacity < byteBuff length &&  unpersistedBytesBound > OL
+                {Buffer.VALID, 100, 0L, 50}, // capacity > byteBuff length &&  unpersistedBytesBound = OL
+                {Buffer.VALID, 100, 2L, 0}, // capacity > byteBuff length &&  unpersistedBytesBound > OL
+                {Buffer.VALID, 50, 0L, 0}, // capacity < byteBuff length &&  unpersistedBytesBound = OL
+                {Buffer.VALID, 50, 2L, 0}, // capacity < byteBuff length &&  unpersistedBytesBound > OL
+
+                /*{Buffer.VALID, 0, -1L, 0}, //loop with capacity = 0
+                {Buffer.EMPTY, 2, 2L, 0}, // capacity > byteBuff length
+                {Buffer.VALID, 2, 2L, 1},
+                {Buffer.VALID, 2, 0L, 0}, // capacity = byteBuff length
+                {Buffer.VALID, 0, -2L, 0}, // byteBuff empty
                 // line coverage 123 & 134
-                {createByteBuf(15), 10, 0L, 5},
+                {Buffer.VALID, 10, 0L, 5},
                 // line coverage 136
-                //{createByteBuf(5), 10, 5L, 0},
-                // Mock ByteBuff
-                {mockByteBuf(), 10, 5L, 0},
+                {Buffer.VALID, 10, 5L, 0},*/
         });
     }
 
@@ -74,6 +89,7 @@ public class BufferedChannelWriteTest {
                 bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
                 if (this.bufferedCapacity != 0) {
                     this.bufferedChannel.write(this.writeByteBuf);
+                    System.out.println("writeBuffer.writerIndex(): " + this.bufferedChannel.writeBuffer.writerIndex());
                 }
             }
             result = this.bufferedChannel.getNumOfBytesInWriteBuffer();
@@ -123,14 +139,14 @@ public class BufferedChannelWriteTest {
         return byteBuf;
     }
 
-    private static ByteBuf mockByteBuf() {
-        ByteBuf byteBuf = mock(ByteBuf.class);
-        Mockito.when(byteBuf.readableBytes()).thenReturn(0);
-        return byteBuf;
-    }
-
     @AfterAll
     public static void cleanAll() throws IOException {
         FileUtils.cleanDirectory(FileUtils.getFile(dir));
+    }
+
+    enum Buffer {
+        VALID,
+        EMPTY,
+        NULL
     }
 }

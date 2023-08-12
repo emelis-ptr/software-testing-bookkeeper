@@ -117,12 +117,14 @@ public class BufferedChannelReadTest {
                 actualNumBytes = this.bufferedChannel.read(readByteBuf, this.position, this.length);
             }
 
+            System.out.println("Actual num bytes: " + actualNumBytes);
             int d = (int) (this.numWriteBytes - this.position);
             if ((d <= this.numReadBytes && d >= this.length) || (d > this.numReadBytes && this.numReadBytes >= this.length)) {
                 if (this.length > 0) {
                     expectedNumBytes = Math.min(d, this.numReadBytes);
                 }
             }
+            System.out.println("Expected num bytes: " + expectedNumBytes);
             Assert.assertEquals(expectedNumBytes, actualNumBytes);
         } catch (IllegalArgumentException | IOException e) {
             error = e.getClass();
@@ -133,9 +135,12 @@ public class BufferedChannelReadTest {
     private ByteBuf createByteBuff(int numWriteBytes) {
         ByteBuf writeBuf = Unpooled.buffer(numWriteBytes, numWriteBytes);
         byte[] data = new byte[numWriteBytes];
+        System.out.println(numWriteBytes);
+        System.out.println(data.length);
         Random random = new Random();
         random.nextBytes(data);
         writeBuf.writeBytes(data);
+        System.out.println(writeBuf);
         return writeBuf;
     }
 
