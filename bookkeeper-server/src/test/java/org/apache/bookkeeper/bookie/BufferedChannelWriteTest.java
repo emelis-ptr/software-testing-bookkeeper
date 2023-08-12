@@ -70,17 +70,7 @@ public class BufferedChannelWriteTest {
                 // JACOCO LINE 136
                 {Buffer.VALID, 100, 100L, 50},
                 // PIT LINE 136
-                // {Buffer.VALID, 100, 50L, 0}
-
-                /*{Buffer.VALID, 0, -1L, 0}, //loop with capacity = 0
-                {Buffer.EMPTY, 2, 2L, 0}, // capacity > byteBuff length
-                {Buffer.VALID, 2, 2L, 1},
-                {Buffer.VALID, 2, 0L, 0}, // capacity = byteBuff length
-                {Buffer.VALID, 0, -2L, 0}, // byteBuff empty
-                // line coverage 123 & 134
-                {Buffer.VALID, 10, 0L, 5},
-                // line coverage 136
-                {Buffer.VALID, 10, 5L, 0},*/
+                {Buffer.VALID, 100, 50L, 0}
         });
     }
 
