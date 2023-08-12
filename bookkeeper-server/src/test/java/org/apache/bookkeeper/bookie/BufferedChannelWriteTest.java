@@ -66,8 +66,11 @@ public class BufferedChannelWriteTest {
                 {Buffer.VALID, 100, 2L, 0}, // capacity > byteBuff length &&  unpersistedBytesBound > OL
                 {Buffer.VALID, 50, 0L, 0}, // capacity = byteBuff length &&  unpersistedBytesBound = OL
                 {Buffer.VALID, 50, 2L, 0}, // capacity = byteBuff length &&  unpersistedBytesBound > OL
+                {Buffer.EMPTY, 50, 0L, 0},
                 // JACOCO LINE 136
-                {Buffer.VALID, 100, 50L, 0}
+                {Buffer.VALID, 100, 100L, 50},
+                // PIT LINE 136
+                // {Buffer.VALID, 100, 50L, 0}
 
                 /*{Buffer.VALID, 0, -1L, 0}, //loop with capacity = 0
                 {Buffer.EMPTY, 2, 2L, 0}, // capacity > byteBuff length
@@ -90,11 +93,6 @@ public class BufferedChannelWriteTest {
             if (this.writeByteBuf != null) {
                 bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
                 this.bufferedChannel.write(this.writeByteBuf);
-            }
-
-            System.out.println(this.bufferedChannel.unpersistedBytes);
-            if (this.bufferedChannel.unpersistedBytes.get() >= this.unpersistedBytesBound) {
-                System.out.println("True");
             }
 
             result = this.bufferedChannel.getNumOfBytesInWriteBuffer();
