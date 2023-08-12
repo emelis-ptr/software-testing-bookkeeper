@@ -23,8 +23,8 @@ import java.util.Random;
 public class BufferedChannelWriteTest {
     private static final String dir = "test";
     private static final String fileName = "writeFile";
-    private ByteBuf writeByteBuf; // {null, empty, notEmpty, invalid}
-    private final int bufferedCapacity; //{<0, =0, >0}
+    private ByteBuf writeByteBuf; // {null, empty, notEmpty}
+    private final int bufferedCapacity; //{< capacity buffer, =capacity buffer, >capacity buffer}
     private final long unpersistedBytesBound;
     private final Object expected;
 
@@ -64,8 +64,10 @@ public class BufferedChannelWriteTest {
                 {Buffer.VALID, 20, 2L, 0}, // capacity < byteBuff length &&  unpersistedBytesBound > OL
                 {Buffer.VALID, 100, 0L, 50}, // capacity > byteBuff length &&  unpersistedBytesBound = OL
                 {Buffer.VALID, 100, 2L, 0}, // capacity > byteBuff length &&  unpersistedBytesBound > OL
-                {Buffer.VALID, 50, 0L, 0}, // capacity < byteBuff length &&  unpersistedBytesBound = OL
-                {Buffer.VALID, 50, 2L, 0}, // capacity < byteBuff length &&  unpersistedBytesBound > OL
+                {Buffer.VALID, 50, 0L, 0}, // capacity = byteBuff length &&  unpersistedBytesBound = OL
+                {Buffer.VALID, 50, 2L, 0}, // capacity = byteBuff length &&  unpersistedBytesBound > OL
+                // JACOCO LINE 136
+                {Buffer.VALID, 100, 50L, 0}
 
                 /*{Buffer.VALID, 0, -1L, 0}, //loop with capacity = 0
                 {Buffer.EMPTY, 2, 2L, 0}, // capacity > byteBuff length
@@ -87,12 +89,16 @@ public class BufferedChannelWriteTest {
         try {
             if (this.writeByteBuf != null) {
                 bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, this.fileChannel, this.bufferedCapacity, this.unpersistedBytesBound);
-                if (this.bufferedCapacity != 0) {
-                    this.bufferedChannel.write(this.writeByteBuf);
-                    System.out.println("writeBuffer.writerIndex(): " + this.bufferedChannel.writeBuffer.writerIndex());
-                }
+                this.bufferedChannel.write(this.writeByteBuf);
             }
+
+            System.out.println(this.bufferedChannel.unpersistedBytes);
+            if (this.bufferedChannel.unpersistedBytes.get() >= this.unpersistedBytesBound) {
+                System.out.println("True");
+            }
+
             result = this.bufferedChannel.getNumOfBytesInWriteBuffer();
+
         } catch (NullPointerException | IllegalArgumentException | IOException | IndexOutOfBoundsException e) {
             result = e.getClass();
         }
