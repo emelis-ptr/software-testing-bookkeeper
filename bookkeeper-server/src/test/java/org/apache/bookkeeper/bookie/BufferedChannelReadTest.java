@@ -28,6 +28,7 @@ public class BufferedChannelReadTest {
 
     private static final int CAPACITY = 100;
     private static final int NUM_BYTES = 80;
+    private static final long WRITE_BUFFER_START_POSITION = 2L;
     private BufferedChannel bufferedChannel;
     private ByteBuf dest;
     private final long position; // {<capacità write buffer}, {>capacità write buffer}, {=capacità write buffer}
@@ -96,14 +97,14 @@ public class BufferedChannelReadTest {
                 {Buffer.VALID, 0L, 10, FileChannelType.FILE_CHANNEL, 80}, // writeBufferStartPosition = position
 
                 // MOCK FILE CHANNEL
-                {Buffer.VALID, NUM_BYTES + 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 1}, // writeBufferStartPosition < position
-                {Buffer.VALID, NUM_BYTES - 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 3}, // writeBufferStartPosition > position
-                {Buffer.VALID, NUM_BYTES, 1, FileChannelType.MOCK_FILE_CHANNEL, 2}, // writeBufferStartPosition = position
+                {Buffer.VALID, WRITE_BUFFER_START_POSITION + 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 79}, // writeBufferStartPosition < position
+                {Buffer.VALID, WRITE_BUFFER_START_POSITION - 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 80}, // writeBufferStartPosition > position
+                {Buffer.VALID, WRITE_BUFFER_START_POSITION, 1, FileChannelType.MOCK_FILE_CHANNEL, 80}, // writeBufferStartPosition = position
 
                 // MOCK FILE CHANNEL && MOCK WRITE BUFFER == NULL
-                {Buffer.MOCK_BUFFER, NUM_BYTES + 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 0}, // writeBufferStartPosition < position
-                {Buffer.MOCK_BUFFER, NUM_BYTES - 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 0}, // writeBufferStartPosition > position
-                {Buffer.MOCK_BUFFER, NUM_BYTES, 1, FileChannelType.MOCK_FILE_CHANNEL, 0}, // writeBufferStartPosition = position
+                {Buffer.MOCK_BUFFER, WRITE_BUFFER_START_POSITION + 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 0}, // writeBufferStartPosition < position
+                {Buffer.MOCK_BUFFER, WRITE_BUFFER_START_POSITION - 1, 1, FileChannelType.MOCK_FILE_CHANNEL, NullPointerException.class}, // writeBufferStartPosition > position
+                {Buffer.MOCK_BUFFER, WRITE_BUFFER_START_POSITION, 1, FileChannelType.MOCK_FILE_CHANNEL, 0}, // writeBufferStartPosition = position
 
         });
     }
@@ -144,7 +145,7 @@ public class BufferedChannelReadTest {
 
     private static FileChannel mockFileChannel(int readBytes) throws IOException {
         FileChannel fileChannel = mock(FileChannel.class);
-        Mockito.when(fileChannel.position()).thenReturn(2L);
+        Mockito.when(fileChannel.position()).thenReturn(WRITE_BUFFER_START_POSITION);
         Mockito.when(fileChannel.read(any(ByteBuffer.class), anyLong())).thenReturn(readBytes);
         return fileChannel;
     }

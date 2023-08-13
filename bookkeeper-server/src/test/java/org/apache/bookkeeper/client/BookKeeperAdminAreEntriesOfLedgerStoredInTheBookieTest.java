@@ -19,16 +19,15 @@ import java.util.List;
 @RunWith(Parameterized.class)
 public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends BookKeeperClusterTestCase {
 
-    private final long ledgerId; // {>0L, =OL; <OL}
     private final BookieId bookieAddress; //{null, new BookieSocketAddress}
     private final LedgerMetadata ledgerMetadata; // {null, LedgerMetadata}
     private final Object expected;
 
-    private static final int numOfBookies = 3;
+    private static final int NUM_OF_BOOKIES = 3;
+    private static final long LEDGER_ID = 100L;
 
-    public BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest(long ledgerId, BookieId bookieAddress, LedgerMetadata ledgerMetadata, Object expected) {
-        super(numOfBookies);
-        this.ledgerId = ledgerId;
+    public BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest(BookieId bookieAddress, LedgerMetadata ledgerMetadata, Object expected) {
+        super(NUM_OF_BOOKIES);
         this.bookieAddress = bookieAddress;
         this.ledgerMetadata = ledgerMetadata;
         this.expected = expected;
@@ -45,7 +44,6 @@ public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends Book
         BookKeeper.DigestType digestType = BookKeeper.DigestType.CRC32;
         String PASSWORD = "testPasswd";
 
-        long ledgerID = 100L;
         int lastEntryId = 10;
 
         BookieId bookieAddress = new BookieSocketAddress("bookie0:3181").toBookieId();
@@ -64,7 +62,7 @@ public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends Book
         ensembleOfSegment2.add(bookie2);
 
         LedgerMetadataBuilder builder = LedgerMetadataBuilder.create()
-                .withId(ledgerID)
+                .withId(LEDGER_ID)
                 .withEnsembleSize(3)
                 .withWriteQuorumSize(3)
                 .withAckQuorumSize(2)
@@ -78,14 +76,14 @@ public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends Book
         LedgerMetadata ledgerMetadata = builder.build();
 
         return Arrays.asList(new Object[][]{
-                {ledgerID, bookieAddress, ledgerMetadata, true},
-                {ledgerID, bookieAddress, null, NullPointerException.class},
-                {0L, bookieAddress, ledgerMetadata, true},
-                {-1L, bookieAddress, ledgerMetadata, true},
-                {-1L, bookie1, ledgerMetadata, true},
-                {-1L, null, ledgerMetadata, false},
+                {bookieAddress, ledgerMetadata, true},
+                {bookieAddress, null, NullPointerException.class},
+                {bookieAddress, ledgerMetadata, true},
+                {bookieAddress, ledgerMetadata, true},
+                {bookie1, ledgerMetadata, true},
+                {null, ledgerMetadata, false},
                 // line coverage 1686 PIT
-                {0L, bookie3, ledgerMetadata, false},
+                {bookie3, ledgerMetadata, false},
         });
     }
 
@@ -93,7 +91,7 @@ public class BookKeeperAdminAreEntriesOfLedgerStoredInTheBookieTest extends Book
     public void testAreEntriesOfLedgerStoredInTheBookie() {
         Object result;
         try {
-            result = BookKeeperAdmin.areEntriesOfLedgerStoredInTheBookie(this.ledgerId, this.bookieAddress, this.ledgerMetadata);
+            result = BookKeeperAdmin.areEntriesOfLedgerStoredInTheBookie(LEDGER_ID, this.bookieAddress, this.ledgerMetadata);
         } catch (NullPointerException | IllegalArgumentException e) {
             result = e.getClass();
         }
