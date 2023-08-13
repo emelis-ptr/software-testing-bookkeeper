@@ -9,7 +9,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.Mockito;
-import org.mockito.internal.matchers.Null;
 
 import java.io.File;
 import java.io.IOException;
@@ -27,9 +26,8 @@ import static org.mockito.Mockito.mock;
 @RunWith(value = Parameterized.class)
 public class BufferedChannelReadTest {
 
-    private final int CAPACITY = 100;
-    private final int NUM_WRITE = 80;
-    private final int NUM_READ = 80;
+    private static final int CAPACITY = 100;
+    private static int NUM_BYTES = 80;
     private BufferedChannel bufferedChannel;
     private FileChannel fileChannel;
     private ByteBuf dest;
@@ -46,16 +44,18 @@ public class BufferedChannelReadTest {
 
     private void configure(Buffer bufferType, FileChannelType fileChannelType) throws IOException {
         switch (fileChannelType) {
-            case FILE_CHANNEL: this.fileChannel = returnFileChannel();
-            case MOCK_FILE_CHANNEL: this.fileChannel = mockFileChannel(NUM_READ);
+            case FILE_CHANNEL:
+                this.fileChannel = returnFileChannel();
+            case MOCK_FILE_CHANNEL:
+                this.fileChannel = mockFileChannel(NUM_BYTES);
         }
 
         this.bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, fileChannel, CAPACITY);
-        this.bufferedChannel.write(createByteBuff(NUM_WRITE));
+        this.bufferedChannel.write(createByteBuff(NUM_BYTES));
 
         switch (bufferType) {
             case VALID: {
-                this.dest = Unpooled.buffer(NUM_READ, NUM_READ);
+                this.dest = Unpooled.buffer(NUM_BYTES, NUM_BYTES);
                 break;
             }
             case EMPTY: {
@@ -76,18 +76,26 @@ public class BufferedChannelReadTest {
                 //dest, numWriteBytes, numReadBytes, pos (read), length (read)
                 //ByteBuff NULL
                 {Buffer.NULL, 0L, 2, FileChannelType.FILE_CHANNEL, NullPointerException.class},
-                //pos < cap write && length < cap dest && length < cap write - pos
-                {Buffer.VALID, 20L, 10, FileChannelType.FILE_CHANNEL, 62},
-                //pos < cap write && length < cap dest && length > cap write - pos
-                {Buffer.VALID, 20L, 80, FileChannelType.FILE_CHANNEL, IOException.class},
-                //pos < cap write && length < cap dest && length = cap write - pos
-                {Buffer.VALID, 20L, 60, FileChannelType.FILE_CHANNEL, 62},
-                //pos > cap write
-                {Buffer.VALID, 100L, 10, FileChannelType.FILE_CHANNEL, IllegalArgumentException.class},
-                //pos = cap write && length == 0
-                {Buffer.VALID, 80L, 0, FileChannelType.FILE_CHANNEL, 0},
-                //length > cap dest
-                {Buffer.VALID, 20L, 100, FileChannelType.FILE_CHANNEL, IOException.class},
+                //ByteBuff EMPTY
+                {Buffer.EMPTY, 0L, 0, FileChannelType.FILE_CHANNEL, 0},
+                //pos < NUM_BYTES && length < NUM_BYTES - pos
+                {Buffer.VALID, NUM_BYTES - 10, 5, FileChannelType.FILE_CHANNEL, 12},
+                //pos < NUM_BYTES && length > NUM_BYTES - pos
+                {Buffer.VALID, NUM_BYTES - 1, NUM_BYTES + 1, FileChannelType.FILE_CHANNEL, IOException.class},
+                //pos < NUM_BYTES && length < NUM_BYTES && length = NUM_BYTES - pos
+                {Buffer.VALID, NUM_BYTES - 1, 1, FileChannelType.FILE_CHANNEL, 3},
+                //pos > NUM_BYTES
+                {Buffer.VALID, NUM_BYTES + 1, 10, FileChannelType.FILE_CHANNEL, IOException.class},
+                //pos = NUM_BYTES && length == 0
+                {Buffer.VALID, NUM_BYTES, 0, FileChannelType.FILE_CHANNEL, 0},
+
+                {Buffer.VALID, -NUM_BYTES, 10, FileChannelType.FILE_CHANNEL, 80},  // writeBufferStartPosition > position
+                {Buffer.VALID, 0L, 10, FileChannelType.FILE_CHANNEL, 80}, // writeBufferStartPosition = position
+
+                // MOCK FILE CHANNEL
+                {Buffer.VALID, NUM_BYTES + 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 1}, // writeBufferStartPosition < position
+                {Buffer.VALID, NUM_BYTES - 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 3}, // writeBufferStartPosition > position
+                {Buffer.VALID, NUM_BYTES, 1, FileChannelType.MOCK_FILE_CHANNEL, 2}, // writeBufferStartPosition = position
 
                 /*// not writing before reading
                 {2, 2, 0L, 2, NOT_WRITE, returnFileChannel(), false, IOException.class},
