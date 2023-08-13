@@ -138,7 +138,7 @@ public class BufferedChannelWriteTest {
         FileUtils.cleanDirectory(FileUtils.getFile(dir));
     }
 
-    enum Buffer {
+    private enum Buffer {
         VALID,
         EMPTY,
         NULL
