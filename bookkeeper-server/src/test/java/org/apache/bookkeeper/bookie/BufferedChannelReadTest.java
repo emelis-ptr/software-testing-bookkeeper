@@ -27,12 +27,11 @@ import static org.mockito.Mockito.mock;
 public class BufferedChannelReadTest {
 
     private static final int CAPACITY = 100;
-    private static int NUM_BYTES = 80;
+    private static final int NUM_BYTES = 80;
     private BufferedChannel bufferedChannel;
-    private FileChannel fileChannel;
     private ByteBuf dest;
-    private final long position; // {<0, =>0}
-    private final int length; // {<0, =>0}
+    private final long position; // {<capacità write buffer}, {>capacità write buffer}, {=capacità write buffer}
+    private final int length; // {< capacità write buffer - pos}, {< capacità write buffer - pos}, {= capacità write buffer - pos}
     private final Object isExceptionExpected;
 
     public BufferedChannelReadTest(Buffer destBuffer, long position, int length, FileChannelType fileChannel, Object isExceptionExpected) throws IOException {
@@ -43,15 +42,18 @@ public class BufferedChannelReadTest {
     }
 
     private void configure(Buffer bufferType, FileChannelType fileChannelType) throws IOException {
+        FileChannel fileChannel;
         switch (fileChannelType) {
             case FILE_CHANNEL:
-                this.fileChannel = returnFileChannel();
+                fileChannel = returnFileChannel();
+                this.bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, fileChannel, CAPACITY);
+                this.bufferedChannel.write(createByteBuff(NUM_BYTES));
+                break;
             case MOCK_FILE_CHANNEL:
-                this.fileChannel = mockFileChannel(NUM_BYTES);
+                fileChannel = mockFileChannel(NUM_BYTES);
+                this.bufferedChannel = new BufferedChannel(mockByteBufAllocator(), fileChannel, CAPACITY);
+                break;
         }
-
-        this.bufferedChannel = new BufferedChannel(UnpooledByteBufAllocator.DEFAULT, fileChannel, CAPACITY);
-        this.bufferedChannel.write(createByteBuff(NUM_BYTES));
 
         switch (bufferType) {
             case VALID: {
@@ -66,7 +68,6 @@ public class BufferedChannelReadTest {
                 this.dest = null;
                 break;
             }
-
         }
     }
 
@@ -79,36 +80,23 @@ public class BufferedChannelReadTest {
                 //ByteBuff EMPTY
                 {Buffer.EMPTY, 0L, 0, FileChannelType.FILE_CHANNEL, 0},
                 //pos < NUM_BYTES && length < NUM_BYTES - pos
-                {Buffer.VALID, NUM_BYTES - 10, 5, FileChannelType.FILE_CHANNEL, 12},
+                {Buffer.VALID, NUM_BYTES - 10, 5, FileChannelType.FILE_CHANNEL, 10},
                 //pos < NUM_BYTES && length > NUM_BYTES - pos
                 {Buffer.VALID, NUM_BYTES - 1, NUM_BYTES + 1, FileChannelType.FILE_CHANNEL, IOException.class},
                 //pos < NUM_BYTES && length < NUM_BYTES && length = NUM_BYTES - pos
-                {Buffer.VALID, NUM_BYTES - 1, 1, FileChannelType.FILE_CHANNEL, 3},
+                {Buffer.VALID, NUM_BYTES - 1, 1, FileChannelType.FILE_CHANNEL, 1},
                 //pos > NUM_BYTES
-                {Buffer.VALID, NUM_BYTES + 1, 10, FileChannelType.FILE_CHANNEL, IOException.class},
+                {Buffer.VALID, NUM_BYTES + 1, 10, FileChannelType.FILE_CHANNEL, IllegalArgumentException.class},
                 //pos = NUM_BYTES && length == 0
                 {Buffer.VALID, NUM_BYTES, 0, FileChannelType.FILE_CHANNEL, 0},
 
-                {Buffer.VALID, -NUM_BYTES, 10, FileChannelType.FILE_CHANNEL, 80},  // writeBufferStartPosition > position
+                {Buffer.VALID, -NUM_BYTES, 10, FileChannelType.FILE_CHANNEL, IllegalArgumentException.class},  // writeBufferStartPosition > position
                 {Buffer.VALID, 0L, 10, FileChannelType.FILE_CHANNEL, 80}, // writeBufferStartPosition = position
 
                 // MOCK FILE CHANNEL
-                {Buffer.VALID, NUM_BYTES + 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 1}, // writeBufferStartPosition < position
-                {Buffer.VALID, NUM_BYTES - 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 3}, // writeBufferStartPosition > position
-                {Buffer.VALID, NUM_BYTES, 1, FileChannelType.MOCK_FILE_CHANNEL, 2}, // writeBufferStartPosition = position
-
-                /*// not writing before reading
-                {2, 2, 0L, 2, NOT_WRITE, returnFileChannel(), false, IOException.class},
-                {2, 2, 0L, 2, NOT_WRITE, mockFileChannel(5), false, false},
-                {2, 2, 5L, 1, WRITE, returnFileChannel(), false, IllegalArgumentException.class}, // writeBufferStartPosition < position
-                {2, 2, -1L, 1, WRITE, returnFileChannel(), false, IllegalArgumentException.class}, // writeBufferStartPosition > position
-                {2, 2, 0L, 2, WRITE, returnFileChannel(), false, false},// writeBufferStartPosition = position
-                // writeBuffer = null
-                {2, 2, 5L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition < position
-                {2, 2, 0L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition > position
-                {2, 2, 2L, 2, MOCK, mockFileChannel(5), false, false}, // writeBufferStartPosition = position
-                {2, 2, 5L, 2, MOCK, mockFileChannel(-3), false, false},
-                {2, 2, 5L, 2, MOCK, mockFileChannel(0), false, false},*/
+                {Buffer.VALID, NUM_BYTES + 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 0}, // writeBufferStartPosition < position
+                {Buffer.VALID, NUM_BYTES - 1, 1, FileChannelType.MOCK_FILE_CHANNEL, 0}, // writeBufferStartPosition > position
+                {Buffer.VALID, NUM_BYTES, 1, FileChannelType.MOCK_FILE_CHANNEL, 0}, // writeBufferStartPosition = position
 
                 // line coverage 250
                 //{Buffer.VALID, 256, 256, 0L, 256, WRITE, returnFileChannel(), false, false},
@@ -117,21 +105,12 @@ public class BufferedChannelReadTest {
 
     @Test
     public void testRead() {
-        Object actual = 0;
-        int expectedNumBytes = 0;
+        Object actual;
 
         try {
             actual = this.bufferedChannel.read(this.dest, this.position, this.length);
             System.out.println("Actual num bytes: " + actual);
 
-            /*int d = (int) (NUM_WRITE - this.position);
-            if ((d <= NUM_READ && d >= this.length) || (d > NUM_READ && NUM_READ >= this.length)) {
-                if (this.length > 0) {
-                    expectedNumBytes = Math.min(d, NUM_READ);
-                }
-            }
-            System.out.println("Expected num bytes: " + expectedNumBytes);*/
-            //Assert.assertEquals(expectedNumBytes, actualNumBytes);
         } catch (IllegalArgumentException | IOException | NullPointerException e) {
             actual = e.getClass();
         }
@@ -165,17 +144,10 @@ public class BufferedChannelReadTest {
         return fileChannel;
     }
 
-
     private ByteBufAllocator mockByteBufAllocator() {
         ByteBufAllocator byteBufAllocator = mock(ByteBufAllocator.class);
         Mockito.when(byteBufAllocator.directBuffer()).thenReturn(null);
         return byteBufAllocator;
-    }
-
-    public enum WriteBeforeReadingType {
-        WRITE,
-        NOT_WRITE,
-        MOCK
     }
 
     private enum FileChannelType {
