@@ -49,7 +49,7 @@ public class BufferedChannelReadTest {
                 fileChannel = returnFileChannel();
                 break;
             case MOCK_FILE_CHANNEL:
-                fileChannel = mockFileChannel(NUM_BYTES);
+                fileChannel = mockFileChannel();
                 break;
         }
 
@@ -75,7 +75,7 @@ public class BufferedChannelReadTest {
     }
 
     @Parameterized.Parameters
-    public static Collection<Object[]> getParameters() throws IOException {
+    public static Collection<Object[]> getParameters() {
         return Arrays.asList(new Object[][]{
                 //dest, numWriteBytes, numReadBytes, pos (read), length (read)
                 //ByteBuff NULL
@@ -119,10 +119,16 @@ public class BufferedChannelReadTest {
 
         } catch (IllegalArgumentException | IOException | NullPointerException e) {
             actual = e.getClass();
+            e.printStackTrace();
         }
         Assert.assertEquals(isExceptionExpected, actual);
     }
 
+    /**
+     * Creation of a ByteBuf
+     *
+     * @return: ByteBuf
+     */
     private ByteBuf createByteBuff() {
         ByteBuf writeBuf = Unpooled.buffer(NUM_BYTES, NUM_BYTES);
         byte[] data = new byte[BufferedChannelReadTest.NUM_BYTES];
@@ -132,24 +138,45 @@ public class BufferedChannelReadTest {
         return writeBuf;
     }
 
+    /**
+     * Creation of a temporary file
+     *
+     * @throws IOException:
+     * @return: File
+     */
     private static File createTempFile() throws IOException {
         File tempFile = File.createTempFile("file", "log");
         tempFile.deleteOnExit();
         return tempFile;
     }
 
+    /**
+     * @throws IOException:
+     * @return: FileChannel
+     */
     private static FileChannel returnFileChannel() throws IOException {
         File newFile = createTempFile();
         return new RandomAccessFile(newFile, "rw").getChannel();
     }
 
-    private static FileChannel mockFileChannel(int readBytes) throws IOException {
+    /**
+     * Mock FileChannel
+     *
+     * @throws IOException:
+     * @return: FileChannel
+     */
+    private static FileChannel mockFileChannel() throws IOException {
         FileChannel fileChannel = mock(FileChannel.class);
         Mockito.when(fileChannel.position()).thenReturn(WRITE_BUFFER_START_POSITION);
-        Mockito.when(fileChannel.read(any(ByteBuffer.class), anyLong())).thenReturn(readBytes);
+        Mockito.when(fileChannel.read(any(ByteBuffer.class), anyLong())).thenReturn(NUM_BYTES);
         return fileChannel;
     }
 
+    /**
+     * Mock ByteBufAllocator
+     *
+     * @return: ByteBufAllocator
+     */
     private ByteBufAllocator mockByteBufAllocator() {
         ByteBufAllocator byteBufAllocator = mock(ByteBufAllocator.class);
         Mockito.when(byteBufAllocator.directBuffer()).thenReturn(null);
